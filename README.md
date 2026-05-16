@@ -6,6 +6,8 @@ WAROGAN PDF Model Parser reads a Warhammer 40,000 roster PDF exported from WAROG
 
 The tool runs entirely in the browser. Download the repository and open `index.html`. That's it.
 
+🔗 Link https://keroro6262.github.io/40k-WAROGAN-PDF-Model-Parser/
+
 ## Features
 
 - Parse a WAROGAN roster PDF into a unit and model table

@@ -6,6 +6,9 @@ WAROGAN PDF Model Parser 讀取從 WAROGAN 匯出的 Warhammer 40,000 roster PDF
 
 此工具完全在瀏覽器中運行。下載倉庫後直接開啟 `index.html` 即可使用。
 
+🔗 連結 https://keroro6262.github.io/40k-WAROGAN-PDF-Model-Parser/
+
+
 ## 功能
 
 - 將 WAROGAN roster PDF 解析為單位與模型表格
