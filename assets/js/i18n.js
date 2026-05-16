@@ -54,6 +54,13 @@
       'section.collapse':   '收合',
       'section.expandTitle': '展開{section}',
       'section.collapseTitle': '收合{section}',
+      'preview.section.enhancements': '強化',
+      'preview.section.abilities':    '技能',
+      'preview.section.ranged':       '射擊武器',
+      'preview.section.melee':        '近戰武器',
+      'preview.label.keywords':       '關鍵詞',
+      'preview.label.faction':        '陣營',
+      'preview.label.invulnSave':     '無敵保護',
     },
     en: {
       'brand.desc':         'Warhammer 40,000 10th Edition Model-level Roster Parser',
@@ -109,6 +116,13 @@
       'section.collapse':   'Collapse',
       'section.expandTitle': 'Expand {section}',
       'section.collapseTitle': 'Collapse {section}',
+      'preview.section.enhancements': 'Enhancements',
+      'preview.section.abilities':    'Abilities',
+      'preview.section.ranged':       'Ranged Weapons',
+      'preview.section.melee':        'Melee Weapons',
+      'preview.label.keywords':       'Keywords',
+      'preview.label.faction':        'Faction',
+      'preview.label.invulnSave':     'Invulnerable Save',
     }
   };
 

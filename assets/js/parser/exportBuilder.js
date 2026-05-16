@@ -126,12 +126,13 @@ export const renderWeapons = (unit, group) => unique(group.matchedWeapons.map((m
 })).join("\n");
 
 export const buildTaggedPreview = (army, unit, group) => {
+  const t = (key) => window.i18n?.t(key) ?? key;
   const lines = [formatTaggedStats(group.statProfile), ""];
-  appendSection(lines, "強化", formatEnhancements(unit));
-  appendSection(lines, "技能", formatTaggedAbilities(army, unit, group));
-  appendSection(lines, "射擊武器", formatTaggedWeapons(unit, group, "ranged"));
-  appendSection(lines, "近戰武器", formatTaggedWeapons(unit, group, "melee"));
-  lines.push("[94A3B8]關鍵詞:[-]");
+  appendSection(lines, t("preview.section.enhancements"), formatEnhancements(unit));
+  appendSection(lines, t("preview.section.abilities"), formatTaggedAbilities(army, unit, group, t));
+  appendSection(lines, t("preview.section.ranged"), formatTaggedWeapons(unit, group, "ranged"));
+  appendSection(lines, t("preview.section.melee"), formatTaggedWeapons(unit, group, "melee"));
+  lines.push(`[94A3B8]${t("preview.label.keywords")}:[-]`);
   lines.push(group.keywords.allModels.join(", ") || "-");
   return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 };
@@ -183,12 +184,12 @@ const formatTaggedStats = (profile) => {
 const formatEnhancements = (unit) => (unit.enhancements || [])
   .map((enhancement) => `[D8B4FE]${enhancement.name || enhancement}:[-] ${enhancement.description || ""}`.trim());
 
-const formatTaggedAbilities = (army, unit, group) => {
+const formatTaggedAbilities = (army, unit, group, t) => {
   const lines = [];
   const faction = unit.faction || army?.faction;
-  if (faction) lines.push(`[D8B4FE]【陣營】:[-] ${faction}`);
+  if (faction) lines.push(`[D8B4FE]【${t("preview.label.faction")}】:[-] ${faction}`);
   group.matchedAbilities.forEach((ability) => {
-    const name = ability.name === "Invulnerable Save" ? "無敵保護" : ability.name;
+    const name = ability.name === "Invulnerable Save" ? t("preview.label.invulnSave") : ability.name;
     lines.push(`[D8B4FE]${name}:[-] ${ability.description || ability.rawText || ""}`.trim());
   });
   return lines;
