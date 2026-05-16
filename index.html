@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
+  <title>WAROGAN PDF Parser｜Warhammer 40K 10版模型數值解析工具</title>
+  <meta name="description" content="WAROGAN PDF Parser：免費線上解析 Warhammer 40,000 第10版 WAROGAN 匯出的名冊 PDF，自動拆解模型級數值、武器檔案、能力與關鍵字，支援 JSON / CSV / HTML 匯出。">
+  <meta name="keywords" content="Warhammer 40K, Warhammer 40000, 10th edition, 10版, 名冊解析, roster parser, WAROGAN, 模型數值, datasheet, PDF parser, 40K tools">
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="WAROGAN PDF Parser｜Warhammer 40K 10版模型數值解析工具">
+  <meta property="og:description" content="免費線上解析 WAROGAN 匯出的名冊 PDF，自動拆解模型級數值、武器檔案、能力與關鍵字，支援 JSON / CSV / HTML 匯出。">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="en_US">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="WAROGAN PDF Parser｜Warhammer 40K 10版模型數值解析工具">
+  <meta name="twitter:description" content="免費線上解析 WAROGAN 名冊 PDF，自動拆解模型數值、武器與能力。">
+  <!-- JSON-LD 結構化資料 -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "WAROGAN PDF Parser",
+    "description": "解析 Warhammer 40,000 第10版 WAROGAN 匯出的名冊 PDF，拆解模型級數值、武器檔案、特殊能力與關鍵字，並支援 JSON / CSV / HTML 格式匯出。",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "Any",
+    "inLanguage": ["zh-Hant", "en"],
+    "isAccessibleForFree": true,
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": [
+      "PDF 名冊解析",
+      "模型級數值拆解",
+      "武器檔案解析",
+      "JSON / CSV / HTML 匯出",
+      "中英雙語介面"
+    ]
+  }
+  </script>
+  <link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body data-theme="day">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <header class="brand">
+        <h1>WAROGAN PDF Parser</h1>
+        <p data-i18n="brand.desc">Warhammer 40,000 10版模型級資料解析工具</p>
+      </header>
+
+      <label id="dropZone" class="drop-zone">
+        <input id="fileInput" type="file" accept="application/pdf,.pdf">
+        <span class="drop-title" data-i18n="file.label">匯入 PDF</span>
+        <span class="drop-hint" data-i18n="file.hint">選擇或拖放 WAROGAN 匯出的 roster PDF</span>
+      </label>
+
+      <button id="parseButton" class="primary full" type="button" disabled data-i18n="btn.parse">解析</button>
+      <div id="status" class="status">等待 PDF 匯入。</div>
+
+      <div class="button-grid">
+        <button id="themeToggleButton" type="button">夜間模式</button>
+        <button id="langToggleButton" type="button">EN</button>
+        <button id="downloadJsonButton" type="button" disabled data-i18n="btn.downloadJson">下載 JSON</button>
+        <button id="downloadCsvButton" type="button" disabled data-i18n="btn.downloadCsv">下載 CSV</button>
+        <button id="downloadHtmlButton" type="button" disabled data-i18n="btn.downloadHtml">下載 HTML</button>
+        <button id="copyTableButton" type="button" disabled data-i18n="btn.copyTable">複製目前表格</button>
+        <button id="togglePreviewButton" type="button" disabled>顯示格式預覽</button>
+        <button id="copyPreviewButton" type="button" disabled data-i18n="btn.copyPreview">複製格式預覽</button>
+        <button id="toggleRawButton" type="button" disabled>顯示原始文字</button>
+        <button id="toggleWarningsButton" type="button" disabled>顯示解析警告</button>
+        <button id="viewModeButton" class="mode-button" type="button" disabled>逐模型模式</button>
+      </div>
+
+      <section class="side-section">
+        <h2>Units</h2>
+        <div id="unitList" class="unit-list">
+          <div class="empty">尚未解析單位。</div>
+        </div>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <section class="topbar">
+        <div>
+          <h2 id="armyTitle">尚未載入 roster</h2>
+          <p id="armyMeta">匯入 PDF 後會顯示單位、模型群與警告數。</p>
+        </div>
+        <input id="searchInput" class="search" type="search" placeholder="搜尋模型、裝備、能力、詞條" data-i18n-placeholder="search.placeholder" disabled>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h3 data-i18n="table.heading">模型級表格</h3>
+          <span id="modelCountBadge" class="badge">0</span>
+        </div>
+        <div class="table-wrap">
+          <table id="modelTable">
+            <thead>
+              <tr>
+                <th>Unit</th>
+                <th>Model</th>
+                <th>Count</th>
+                <th>Stats</th>
+                <th>Equipment</th>
+                <th>Weapon Profiles</th>
+                <th>Abilities</th>
+                <th>Keywords</th>
+                <th>Warnings</th>
+              </tr>
+            </thead>
+            <tbody id="modelTableBody">
+              <tr><td colspan="9" class="empty">尚未解析資料。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="warningPanel" class="panel is-hidden">
+        <div class="panel-head">
+          <h3 data-i18n="warnings.heading">解析警告</h3>
+          <span id="warningCountBadge" class="badge">0</span>
+        </div>
+        <div id="warningList" class="warning-list">
+          <div class="empty">沒有警告。</div>
+        </div>
+      </section>
+
+      <section id="rawPanel" class="panel is-hidden">
+        <div class="panel-head">
+          <h3 data-i18n="raw.heading">原始文字預覽</h3>
+          <span id="rawPageBadge" class="badge">0 pages</span>
+        </div>
+        <pre id="rawTextPreview"></pre>
+      </section>
+
+      <section id="previewPanel" class="panel is-hidden">
+        <div class="panel-head preview-head">
+          <div>
+            <h3 data-i18n="preview.heading">格式預覽</h3>
+            <span id="previewModelBadge" class="panel-note">尚未選擇模型</span>
+          </div>
+          <select id="previewSelect" class="preview-select" disabled></select>
+        </div>
+        <pre id="taggedPreview" class="tagged-preview"></pre>
+      </section>
+    </main>
+  </div>
+
+  <script src="./assets/js/i18n.js"></script>
+  <script src="./assets/js/app.bundle.js"></script>
+  <noscript>
+    <p>WAROGAN PDF Parser 是免費的 Warhammer 40,000 第10版名冊 PDF 解析工具。
+    上傳 WAROGAN 匯出的 PDF，自動解析每個模型的數值、武器檔案、特殊能力與關鍵字，
+    並可匯出為 JSON、CSV 或 HTML 格式。</p>
+  </noscript>
+</body>
+</html>

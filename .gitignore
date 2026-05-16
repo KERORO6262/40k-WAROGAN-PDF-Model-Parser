@@ -1,0 +1,21 @@
+# Local/private roster PDFs
+*.pdf
+!samples/**/*.pdf
+
+# Local export outputs
+warogan-models.json
+warogan-models.csv
+warogan-models.html
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Runtime/cache folders if tools are added later
+node_modules/
+dist/
+.cache/
+coverage/
