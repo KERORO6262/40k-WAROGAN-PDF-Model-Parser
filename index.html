@@ -45,8 +45,9 @@
   <link rel="stylesheet" href="./assets/css/styles.css">
 </head>
 <body data-theme="day">
-  <div class="app-shell">
-    <aside class="sidebar">
+  <div class="app-shell" id="appShell">
+
+    <aside class="sidebar" id="mainSidebar">
       <header class="brand">
         <h1>WAROGAN PDF Parser</h1>
         <p data-i18n="brand.desc">Warhammer 40,000 10版模型級資料解析工具</p>
@@ -54,6 +55,7 @@
 
       <label id="dropZone" class="drop-zone">
         <input id="fileInput" type="file" accept="application/pdf,.pdf">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
         <span class="drop-title" data-i18n="file.label">匯入 PDF</span>
         <span class="drop-hint" data-i18n="file.hint">選擇或拖放 WAROGAN 匯出的 roster PDF</span>
       </label>
@@ -83,69 +85,118 @@
       </section>
     </aside>
 
+    <!-- Sidebar rail: zero-width seam between sidebar and workspace, holds the toggle + section tabs -->
+    <div class="sidebar-rail" id="sidebarRail">
+      <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="收合側欄">
+        <span class="sidebar-toggle-icon" aria-hidden="true">‹</span>
+      </button>
+      <nav class="section-tabs" aria-label="Section navigation">
+        <button class="section-tab" type="button" data-target-panel="top" aria-label="Back to top">
+          <span class="section-tab-icon" aria-hidden="true">↑</span>
+          <span class="section-tab-label" data-i18n="tabs.top">最上方</span>
+        </button>
+        <button class="section-tab" type="button" data-target-panel="table" aria-label="Go to table">
+          <span class="section-tab-icon" aria-hidden="true">▦</span>
+          <span class="section-tab-label" data-i18n="tabs.table">表格</span>
+        </button>
+        <button class="section-tab" type="button" data-target-panel="preview" aria-label="Go to format preview">
+          <span class="section-tab-icon" aria-hidden="true">[]</span>
+          <span class="section-tab-label" data-i18n="tabs.preview">格式預覽</span>
+        </button>
+        <button class="section-tab" type="button" data-target-panel="raw" aria-label="Go to raw text">
+          <span class="section-tab-icon" aria-hidden="true">¶</span>
+          <span class="section-tab-label" data-i18n="tabs.raw">原始文字</span>
+        </button>
+        <button class="section-tab" type="button" data-target-panel="warnings" aria-label="Go to parse warnings">
+          <span class="section-tab-icon" aria-hidden="true">!</span>
+          <span class="section-tab-label" data-i18n="tabs.warnings">解析警告</span>
+        </button>
+      </nav>
+    </div>
+
     <main class="workspace">
-      <section class="topbar">
+      <section id="top" class="topbar">
         <div>
-          <h2 id="armyTitle">尚未載入 roster</h2>
-          <p id="armyMeta">匯入 PDF 後會顯示單位、模型群與警告數。</p>
+          <h2 id="armyTitle" data-i18n="army.noTitle">No roster loaded</h2>
+          <p id="armyMeta" data-i18n="army.noMeta">Import a PDF to view units, model groups, and warnings.</p>
         </div>
-        <input id="searchInput" class="search" type="search" placeholder="搜尋模型、裝備、能力、詞條" data-i18n-placeholder="search.placeholder" disabled>
+        <input id="searchInput" class="search" type="search" data-i18n-placeholder="search.placeholder" disabled>
       </section>
 
-      <section class="panel">
+      <section id="tableSection" class="panel" data-panel-key="table">
         <div class="panel-head">
-          <h3 data-i18n="table.heading">模型級表格</h3>
-          <span id="modelCountBadge" class="badge">0</span>
-        </div>
-        <div class="table-wrap">
-          <table id="modelTable">
-            <thead>
-              <tr>
-                <th>Unit</th>
-                <th>Model</th>
-                <th>Count</th>
-                <th>Stats</th>
-                <th>Equipment</th>
-                <th>Weapon Profiles</th>
-                <th>Abilities</th>
-                <th>Keywords</th>
-                <th>Warnings</th>
-              </tr>
-            </thead>
-            <tbody id="modelTableBody">
-              <tr><td colspan="9" class="empty">尚未解析資料。</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="warningPanel" class="panel is-hidden">
-        <div class="panel-head">
-          <h3 data-i18n="warnings.heading">解析警告</h3>
-          <span id="warningCountBadge" class="badge">0</span>
-        </div>
-        <div id="warningList" class="warning-list">
-          <div class="empty">沒有警告。</div>
-        </div>
-      </section>
-
-      <section id="rawPanel" class="panel is-hidden">
-        <div class="panel-head">
-          <h3 data-i18n="raw.heading">原始文字預覽</h3>
-          <span id="rawPageBadge" class="badge">0 pages</span>
-        </div>
-        <pre id="rawTextPreview"></pre>
-      </section>
-
-      <section id="previewPanel" class="panel is-hidden">
-        <div class="panel-head preview-head">
-          <div>
-            <h3 data-i18n="preview.heading">格式預覽</h3>
-            <span id="previewModelBadge" class="panel-note">尚未選擇模型</span>
+          <div class="panel-title">
+            <h3 data-i18n="table.heading">模型級表格</h3>
+            <span id="modelCountBadge" class="badge">0</span>
           </div>
-          <select id="previewSelect" class="preview-select" disabled></select>
+          <button class="panel-toggle" type="button" data-section-toggle="table" aria-expanded="true" aria-controls="tablePanelBody" data-i18n="section.collapse">收合</button>
         </div>
-        <pre id="taggedPreview" class="tagged-preview"></pre>
+        <div id="tablePanelBody" class="panel-body">
+          <div class="table-wrap">
+            <table id="modelTable">
+              <thead>
+                <tr>
+                  <th>Unit</th>
+                  <th>Model</th>
+                  <th>Count</th>
+                  <th>Stats</th>
+                  <th>Equipment</th>
+                  <th>Weapon Profiles</th>
+                  <th>Abilities</th>
+                  <th>Keywords</th>
+                  <th>Warnings</th>
+                </tr>
+              </thead>
+              <tbody id="modelTableBody">
+                <tr><td colspan="9" class="empty" data-i18n="table.noData">尚未解析資料。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="previewSection" class="panel" data-panel-key="preview">
+        <div class="panel-head preview-head">
+          <div class="panel-title">
+            <h3 data-i18n="preview.heading">格式預覽</h3>
+            <span id="previewModelBadge" class="panel-note" data-i18n="preview.noModel">尚未選擇模型</span>
+          </div>
+          <div class="panel-actions">
+            <select id="previewSelect" class="preview-select" disabled></select>
+            <button class="panel-toggle" type="button" data-section-toggle="preview" aria-expanded="false" aria-controls="previewPanelBody" data-i18n="section.expand">展開</button>
+          </div>
+        </div>
+        <div id="previewPanelBody" class="panel-body">
+          <pre id="taggedPreview" class="tagged-preview"></pre>
+        </div>
+      </section>
+
+      <section id="rawSection" class="panel" data-panel-key="raw">
+        <div class="panel-head">
+          <div class="panel-title">
+            <h3 data-i18n="raw.heading">原始文字預覽</h3>
+            <span id="rawPageBadge" class="badge">0 pages</span>
+          </div>
+          <button class="panel-toggle" type="button" data-section-toggle="raw" aria-expanded="false" aria-controls="rawPanelBody" data-i18n="section.expand">展開</button>
+        </div>
+        <div id="rawPanelBody" class="panel-body">
+          <pre id="rawTextPreview"></pre>
+        </div>
+      </section>
+
+      <section id="warningSection" class="panel" data-panel-key="warnings">
+        <div class="panel-head">
+          <div class="panel-title">
+            <h3 data-i18n="warnings.heading">解析警告</h3>
+            <span id="warningCountBadge" class="badge">0</span>
+          </div>
+          <button class="panel-toggle" type="button" data-section-toggle="warnings" aria-expanded="false" aria-controls="warningPanelBody" data-i18n="section.expand">展開</button>
+        </div>
+        <div id="warningPanelBody" class="panel-body">
+          <div id="warningList" class="warning-list">
+            <div class="empty" data-i18n="warnings.empty">沒有警告。</div>
+          </div>
+        </div>
       </section>
     </main>
   </div>

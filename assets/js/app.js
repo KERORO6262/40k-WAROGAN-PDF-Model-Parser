@@ -22,19 +22,29 @@ const dom = {
   armyTitle: document.querySelector("#armyTitle"),
   armyMeta: document.querySelector("#armyMeta"),
   searchInput: document.querySelector("#searchInput"),
+  topSection: document.querySelector("#top"),
+  tableSection: document.querySelector("#tableSection"),
+  tablePanelBody: document.querySelector("#tablePanelBody"),
   modelCountBadge: document.querySelector("#modelCountBadge"),
   modelTableBody: document.querySelector("#modelTableBody"),
-  warningPanel: document.querySelector("#warningPanel"),
+  warningPanel: document.querySelector("#warningSection"),
+  warningPanelBody: document.querySelector("#warningPanelBody"),
   warningCountBadge: document.querySelector("#warningCountBadge"),
   warningList: document.querySelector("#warningList"),
-  rawPanel: document.querySelector("#rawPanel"),
+  rawPanel: document.querySelector("#rawSection"),
+  rawPanelBody: document.querySelector("#rawPanelBody"),
   rawPageBadge: document.querySelector("#rawPageBadge"),
   rawTextPreview: document.querySelector("#rawTextPreview"),
-  previewPanel: document.querySelector("#previewPanel"),
+  previewPanel: document.querySelector("#previewSection"),
+  previewPanelBody: document.querySelector("#previewPanelBody"),
   previewSelect: document.querySelector("#previewSelect"),
   previewModelBadge: document.querySelector("#previewModelBadge"),
   taggedPreview: document.querySelector("#taggedPreview"),
-  langToggleButton: document.querySelector("#langToggleButton")
+  sectionToggleButtons: document.querySelectorAll("[data-section-toggle]"),
+  sectionTabButtons: document.querySelectorAll("[data-target-panel]"),
+  langToggleButton: document.querySelector("#langToggleButton"),
+  sidebarToggle: document.querySelector("#sidebarToggle"),
+  mainSidebar: document.querySelector("#mainSidebar")
 };
 
 let selectedFile = null;
@@ -44,6 +54,19 @@ let expandedModels = true;
 let selectedPreviewKey = "";
 let collapsedUnits = new Set();
 let theme = localStorage.getItem("warogan-theme") || "day";
+let sidebarCollapsed = localStorage.getItem("warogan-sidebar") === "1";
+const sectionState = {
+  table: true,
+  preview: false,
+  raw: false,
+  warnings: false
+};
+const sections = {
+  table: { panel: dom.tableSection, body: dom.tablePanelBody },
+  preview: { panel: dom.previewPanel, body: dom.previewPanelBody },
+  raw: { panel: dom.rawPanel, body: dom.rawPanelBody },
+  warnings: { panel: dom.warningPanel, body: dom.warningPanelBody }
+};
 
 const bindEvents = () => {
   dom.fileInput.addEventListener("change", () => handleFile(dom.fileInput.files[0]));
@@ -53,11 +76,17 @@ const bindEvents = () => {
   dom.downloadCsvButton.addEventListener("click", () => download("warogan-models.csv", "text/csv;charset=utf-8", buildCsv(army, getVisibleRows())));
   dom.downloadHtmlButton.addEventListener("click", () => download("warogan-models.html", "text/html;charset=utf-8", buildHtmlTable(getVisibleRows())));
   dom.copyTableButton.addEventListener("click", copyCurrentTable);
-  dom.togglePreviewButton.addEventListener("click", togglePreview);
+  dom.togglePreviewButton.addEventListener("click", () => toggleSection("preview"));
   dom.copyPreviewButton.addEventListener("click", copyPreview);
-  dom.toggleRawButton.addEventListener("click", toggleRaw);
-  dom.toggleWarningsButton.addEventListener("click", toggleWarnings);
+  dom.toggleRawButton.addEventListener("click", () => toggleSection("raw"));
+  dom.toggleWarningsButton.addEventListener("click", () => toggleSection("warnings"));
   dom.viewModeButton.addEventListener("click", toggleViewMode);
+  dom.sectionToggleButtons.forEach((button) => {
+    button.addEventListener("click", () => toggleSection(button.dataset.sectionToggle));
+  });
+  dom.sectionTabButtons.forEach((button) => {
+    button.addEventListener("click", () => navigateToSection(button.dataset.targetPanel));
+  });
   dom.previewSelect.addEventListener("change", () => {
     selectedPreviewKey = dom.previewSelect.value;
     renderPreview();
@@ -86,9 +115,11 @@ const bindEvents = () => {
   });
   document.addEventListener("langchange", () => {
     applyTheme();
-    updateToggleButtons();
+    updateSectionControls();
     render();
   });
+
+  dom.sidebarToggle.addEventListener("click", toggleSidebar);
 };
 
 const handleFile = (file) => {
@@ -138,6 +169,7 @@ const render = () => {
     dom.previewSelect
   ].forEach((element) => { element.disabled = !hasArmy; });
 
+  updateSectionControls();
   updateViewModeControl();
   renderMeta();
   renderUnitList();
@@ -287,10 +319,50 @@ const renderRaw = () => {
   dom.rawTextPreview.textContent = pdfText?.fullText || "";
 };
 
-const updateToggleButtons = () => {
-  dom.toggleRawButton.textContent = dom.rawPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showRaw') : window.i18n.t('btn.hideRaw');
-  dom.toggleWarningsButton.textContent = dom.warningPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showWarnings') : window.i18n.t('btn.hideWarnings');
-  dom.togglePreviewButton.textContent = dom.previewPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showPreview') : window.i18n.t('btn.hidePreview');
+const updateSectionControls = () => {
+  Object.entries(sections).forEach(([sectionKey, section]) => {
+    if (!section.panel) return;
+    const isExpanded = Boolean(sectionState[sectionKey]);
+    section.panel.classList.toggle("is-collapsed", !isExpanded);
+    section.body?.setAttribute("aria-hidden", String(!isExpanded));
+  });
+
+  dom.sectionToggleButtons.forEach((button) => {
+    const sectionKey = button.dataset.sectionToggle;
+    const isExpanded = Boolean(sectionState[sectionKey]);
+    button.textContent = window.i18n.t(isExpanded ? "section.collapse" : "section.expand");
+    button.title = window.i18n.t(isExpanded ? "section.collapseTitle" : "section.expandTitle", {
+      section: getSectionLabel(sectionKey)
+    });
+    button.setAttribute("aria-expanded", String(isExpanded));
+  });
+
+  dom.togglePreviewButton.textContent = sectionState.preview ? window.i18n.t('btn.hidePreview') : window.i18n.t('btn.showPreview');
+  dom.toggleRawButton.textContent = sectionState.raw ? window.i18n.t('btn.hideRaw') : window.i18n.t('btn.showRaw');
+  dom.toggleWarningsButton.textContent = sectionState.warnings ? window.i18n.t('btn.hideWarnings') : window.i18n.t('btn.showWarnings');
+};
+
+const getSectionLabel = (sectionKey) => window.i18n.t(`tabs.${sectionKey}`);
+
+const setSectionExpanded = (sectionKey, expanded) => {
+  if (!(sectionKey in sectionState)) return;
+  sectionState[sectionKey] = expanded;
+  updateSectionControls();
+};
+
+const toggleSection = (sectionKey) => {
+  setSectionExpanded(sectionKey, !sectionState[sectionKey]);
+};
+
+const navigateToSection = (sectionKey) => {
+  if (sectionKey === "top") {
+    dom.topSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
+  setSectionExpanded(sectionKey, true);
+  window.requestAnimationFrame(() => {
+    sections[sectionKey]?.panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 };
 
 const toggleTheme = () => {
@@ -304,19 +376,16 @@ const applyTheme = () => {
   dom.themeToggleButton.textContent = theme === "day" ? window.i18n.t('btn.theme.day') : window.i18n.t('btn.theme.night');
 };
 
-const toggleRaw = () => {
-  dom.rawPanel.classList.toggle("is-hidden");
-  dom.toggleRawButton.textContent = dom.rawPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showRaw') : window.i18n.t('btn.hideRaw');
+const toggleSidebar = () => {
+  sidebarCollapsed = !sidebarCollapsed;
+  localStorage.setItem("warogan-sidebar", sidebarCollapsed ? "1" : "");
+  applySidebar();
 };
 
-const toggleWarnings = () => {
-  dom.warningPanel.classList.toggle("is-hidden");
-  dom.toggleWarningsButton.textContent = dom.warningPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showWarnings') : window.i18n.t('btn.hideWarnings');
-};
-
-const togglePreview = () => {
-  dom.previewPanel.classList.toggle("is-hidden");
-  dom.togglePreviewButton.textContent = dom.previewPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showPreview') : window.i18n.t('btn.hidePreview');
+const applySidebar = () => {
+  dom.mainSidebar.classList.toggle("is-collapsed", sidebarCollapsed);
+  dom.sidebarToggle.title = sidebarCollapsed ? "展開側欄" : "收合側欄";
+  dom.sidebarToggle.setAttribute("aria-label", sidebarCollapsed ? "展開側欄" : "收合側欄");
 };
 
 const toggleViewMode = () => {
@@ -378,5 +447,6 @@ const setStatus = (message, isError = false) => {
 
 setStatus(window.i18n.t('status.waiting'));
 applyTheme();
+applySidebar();
 bindEvents();
 render();

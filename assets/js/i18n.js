@@ -45,6 +45,15 @@
       'preview.noModel':    '尚未選擇模型',
       'preview.empty':      '解析後會在這裡顯示 bracket color markup 預覽。',
       'units.empty':        '尚未解析單位。',
+      'tabs.top':           '最上方',
+      'tabs.table':         '表格',
+      'tabs.preview':       '格式預覽',
+      'tabs.raw':           '原始文字',
+      'tabs.warnings':      '解析警告',
+      'section.expand':     '展開',
+      'section.collapse':   '收合',
+      'section.expandTitle': '展開{section}',
+      'section.collapseTitle': '收合{section}',
     },
     en: {
       'brand.desc':         'Warhammer 40,000 10th Edition Model-level Roster Parser',
@@ -91,6 +100,15 @@
       'preview.noModel':    'No model selected',
       'preview.empty':      'Parse a roster to preview bracket color markup here.',
       'units.empty':        'No units parsed yet.',
+      'tabs.top':           'Top',
+      'tabs.table':         'Table',
+      'tabs.preview':       'Format Preview',
+      'tabs.raw':           'Raw Text',
+      'tabs.warnings':      'Parse Warnings',
+      'section.expand':     'Expand',
+      'section.collapse':   'Collapse',
+      'section.expandTitle': 'Expand {section}',
+      'section.collapseTitle': 'Collapse {section}',
     }
   };
 

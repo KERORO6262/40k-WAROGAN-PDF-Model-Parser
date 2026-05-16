@@ -1096,6 +1096,8 @@
 
 
   // assets/js/app.js
+  
+  
   const dom = {
     dropZone: document.querySelector("#dropZone"),
     fileInput: document.querySelector("#fileInput"),
@@ -1115,21 +1117,31 @@
     armyTitle: document.querySelector("#armyTitle"),
     armyMeta: document.querySelector("#armyMeta"),
     searchInput: document.querySelector("#searchInput"),
+    topSection: document.querySelector("#top"),
+    tableSection: document.querySelector("#tableSection"),
+    tablePanelBody: document.querySelector("#tablePanelBody"),
     modelCountBadge: document.querySelector("#modelCountBadge"),
     modelTableBody: document.querySelector("#modelTableBody"),
-    warningPanel: document.querySelector("#warningPanel"),
+    warningPanel: document.querySelector("#warningSection"),
+    warningPanelBody: document.querySelector("#warningPanelBody"),
     warningCountBadge: document.querySelector("#warningCountBadge"),
     warningList: document.querySelector("#warningList"),
-    rawPanel: document.querySelector("#rawPanel"),
+    rawPanel: document.querySelector("#rawSection"),
+    rawPanelBody: document.querySelector("#rawPanelBody"),
     rawPageBadge: document.querySelector("#rawPageBadge"),
     rawTextPreview: document.querySelector("#rawTextPreview"),
-    previewPanel: document.querySelector("#previewPanel"),
+    previewPanel: document.querySelector("#previewSection"),
+    previewPanelBody: document.querySelector("#previewPanelBody"),
     previewSelect: document.querySelector("#previewSelect"),
     previewModelBadge: document.querySelector("#previewModelBadge"),
     taggedPreview: document.querySelector("#taggedPreview"),
-    langToggleButton: document.querySelector("#langToggleButton")
+    sectionToggleButtons: document.querySelectorAll("[data-section-toggle]"),
+    sectionTabButtons: document.querySelectorAll("[data-target-panel]"),
+    langToggleButton: document.querySelector("#langToggleButton"),
+    sidebarToggle: document.querySelector("#sidebarToggle"),
+    mainSidebar: document.querySelector("#mainSidebar")
   };
-
+  
   let selectedFile = null;
   let pdfText = null;
   let army = null;
@@ -1137,7 +1149,20 @@
   let selectedPreviewKey = "";
   let collapsedUnits = new Set();
   let theme = localStorage.getItem("warogan-theme") || "day";
-
+  let sidebarCollapsed = localStorage.getItem("warogan-sidebar") === "1";
+  const sectionState = {
+    table: true,
+    preview: false,
+    raw: false,
+    warnings: false
+  };
+  const sections = {
+    table: { panel: dom.tableSection, body: dom.tablePanelBody },
+    preview: { panel: dom.previewPanel, body: dom.previewPanelBody },
+    raw: { panel: dom.rawPanel, body: dom.rawPanelBody },
+    warnings: { panel: dom.warningPanel, body: dom.warningPanelBody }
+  };
+  
   const bindEvents = () => {
     dom.fileInput.addEventListener("change", () => handleFile(dom.fileInput.files[0]));
     dom.parseButton.addEventListener("click", parseCurrentFile);
@@ -1146,11 +1171,17 @@
     dom.downloadCsvButton.addEventListener("click", () => download("warogan-models.csv", "text/csv;charset=utf-8", buildCsv(army, getVisibleRows())));
     dom.downloadHtmlButton.addEventListener("click", () => download("warogan-models.html", "text/html;charset=utf-8", buildHtmlTable(getVisibleRows())));
     dom.copyTableButton.addEventListener("click", copyCurrentTable);
-    dom.togglePreviewButton.addEventListener("click", togglePreview);
+    dom.togglePreviewButton.addEventListener("click", () => toggleSection("preview"));
     dom.copyPreviewButton.addEventListener("click", copyPreview);
-    dom.toggleRawButton.addEventListener("click", toggleRaw);
-    dom.toggleWarningsButton.addEventListener("click", toggleWarnings);
+    dom.toggleRawButton.addEventListener("click", () => toggleSection("raw"));
+    dom.toggleWarningsButton.addEventListener("click", () => toggleSection("warnings"));
     dom.viewModeButton.addEventListener("click", toggleViewMode);
+    dom.sectionToggleButtons.forEach((button) => {
+      button.addEventListener("click", () => toggleSection(button.dataset.sectionToggle));
+    });
+    dom.sectionTabButtons.forEach((button) => {
+      button.addEventListener("click", () => navigateToSection(button.dataset.targetPanel));
+    });
     dom.previewSelect.addEventListener("change", () => {
       selectedPreviewKey = dom.previewSelect.value;
       renderPreview();
@@ -1159,7 +1190,7 @@
       selectedPreviewKey = "";
       render();
     });
-
+  
     ["dragenter", "dragover"].forEach((eventName) => {
       dom.dropZone.addEventListener(eventName, (event) => {
         event.preventDefault();
@@ -1173,17 +1204,19 @@
       });
     });
     dom.dropZone.addEventListener("drop", (event) => handleFile(event.dataTransfer.files[0]));
-
+  
     dom.langToggleButton.addEventListener("click", () => {
       window.i18n.setLang(window.i18n.lang === "zh" ? "en" : "zh");
     });
     document.addEventListener("langchange", () => {
       applyTheme();
-      updateToggleButtons();
+      updateSectionControls();
       render();
     });
-  };
 
+    dom.sidebarToggle.addEventListener("click", toggleSidebar);
+  };
+  
   const handleFile = (file) => {
     if (!file) return;
     selectedFile = file;
@@ -1194,7 +1227,7 @@
     setStatus(dom.parseButton.disabled ? window.i18n.t('status.noFile') : window.i18n.t('status.fileReady', { filename: file.name }), dom.parseButton.disabled);
     render();
   };
-
+  
   const parseCurrentFile = async () => {
     if (!selectedFile) return;
     setBusy(true);
@@ -1214,12 +1247,24 @@
       setBusy(false);
     }
   };
-
+  
   const render = () => {
     const hasArmy = Boolean(army);
-    [dom.downloadJsonButton, dom.downloadCsvButton, dom.downloadHtmlButton, dom.copyTableButton, dom.togglePreviewButton, dom.copyPreviewButton, dom.toggleRawButton, dom.toggleWarningsButton, dom.viewModeButton, dom.searchInput, dom.previewSelect]
-      .forEach((element) => { element.disabled = !hasArmy; });
-
+    [
+      dom.downloadJsonButton,
+      dom.downloadCsvButton,
+      dom.downloadHtmlButton,
+      dom.copyTableButton,
+      dom.togglePreviewButton,
+      dom.copyPreviewButton,
+      dom.toggleRawButton,
+      dom.toggleWarningsButton,
+      dom.viewModeButton,
+      dom.searchInput,
+      dom.previewSelect
+    ].forEach((element) => { element.disabled = !hasArmy; });
+  
+    updateSectionControls();
     updateViewModeControl();
     renderMeta();
     renderUnitList();
@@ -1228,7 +1273,7 @@
     renderWarnings();
     renderRaw();
   };
-
+  
   const renderMeta = () => {
     if (!army) {
       dom.armyTitle.textContent = window.i18n.t('army.noTitle');
@@ -1239,7 +1284,7 @@
     dom.armyTitle.textContent = army.title || "Warhammer 40,000 10th Edition";
     dom.armyMeta.textContent = `${army.sourceFileName} | ${army.units.length} units | ${modelGroups} model groups | ${army.parseWarnings.length} warnings`;
   };
-
+  
   const renderUnitList = () => {
     if (!army?.units.length) {
       dom.unitList.innerHTML = `<div class="empty">${window.i18n.t('units.empty')}</div>`;
@@ -1261,7 +1306,7 @@
       });
     });
   };
-
+  
   const renderTable = () => {
     const rows = getVisibleRows();
     dom.modelCountBadge.textContent = String(rows.length);
@@ -1284,7 +1329,7 @@
       </tr>
     `).join("");
   };
-
+  
   const renderPreview = () => {
     const rows = getVisibleRows();
     if (!rows.length) {
@@ -1294,21 +1339,23 @@
       dom.taggedPreview.textContent = window.i18n.t('preview.empty');
       return;
     }
-
+  
     const keyedRows = rows.map((row) => ({ ...row, key: getRowKey(row) }));
-    if (!keyedRows.some((row) => row.key === selectedPreviewKey)) selectedPreviewKey = keyedRows[0].key;
-
+    if (!keyedRows.some((row) => row.key === selectedPreviewKey)) {
+      selectedPreviewKey = keyedRows[0].key;
+    }
+  
     dom.previewSelect.disabled = false;
     dom.previewSelect.innerHTML = keyedRows.map(({ unit, group, key }) => (
       `<option value="${escapeHtml(key)}">${escapeHtml(unit.name)} / ${escapeHtml(group.modelName)} x${group.count}</option>`
     )).join("");
     dom.previewSelect.value = selectedPreviewKey;
-
+  
     const selected = keyedRows.find((row) => row.key === selectedPreviewKey) || keyedRows[0];
     dom.previewModelBadge.textContent = `${selected.unit.name} / ${selected.group.modelName} x${selected.group.count}`;
     dom.taggedPreview.textContent = buildTaggedPreview(army, selected.unit, selected.group);
   };
-
+  
   const getVisibleRows = () => {
     if (!army) return [];
     const query = dom.searchInput.value.trim().toLowerCase();
@@ -1326,7 +1373,7 @@
         return text.includes(query);
       });
   };
-
+  
   const renderEquipment = (group) => {
     if (!group.equipmentItems.length) return "-";
     return `<div class="chips">${group.equipmentItems.map((item) => {
@@ -1334,16 +1381,16 @@
       return `<span class="chip" title="${escapeHtml(item.matchConfidence)}">${escapeHtml(label)}</span>`;
     }).join("")}</div>`;
   };
-
+  
   const renderChips = (values) => values.length
     ? `<div class="chips">${values.map((value) => `<span class="chip">${escapeHtml(value)}</span>`).join("")}</div>`
     : "-";
-
+  
   const renderWarningCodes = (unit, group) => {
     const warnings = getGroupWarnings(unit, group);
     return warnings.length ? renderChips(warnings.map((warning) => warning.code)) : "-";
   };
-
+  
   const renderWarnings = () => {
     if (!army) {
       dom.warningCountBadge.textContent = "0";
@@ -1361,18 +1408,58 @@
       `).join("")
       : `<div class="empty">${window.i18n.t('warnings.empty')}</div>`;
   };
-
+  
   const renderRaw = () => {
     dom.rawPageBadge.textContent = `${pdfText?.pages.length || 0} pages`;
     dom.rawTextPreview.textContent = pdfText?.fullText || "";
   };
-
-  const updateToggleButtons = () => {
-    dom.toggleRawButton.textContent = dom.rawPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showRaw') : window.i18n.t('btn.hideRaw');
-    dom.toggleWarningsButton.textContent = dom.warningPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showWarnings') : window.i18n.t('btn.hideWarnings');
-    dom.togglePreviewButton.textContent = dom.previewPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showPreview') : window.i18n.t('btn.hidePreview');
+  
+  const updateSectionControls = () => {
+    Object.entries(sections).forEach(([sectionKey, section]) => {
+      if (!section.panel) return;
+      const isExpanded = Boolean(sectionState[sectionKey]);
+      section.panel.classList.toggle("is-collapsed", !isExpanded);
+      section.body?.setAttribute("aria-hidden", String(!isExpanded));
+    });
+  
+    dom.sectionToggleButtons.forEach((button) => {
+      const sectionKey = button.dataset.sectionToggle;
+      const isExpanded = Boolean(sectionState[sectionKey]);
+      button.textContent = window.i18n.t(isExpanded ? "section.collapse" : "section.expand");
+      button.title = window.i18n.t(isExpanded ? "section.collapseTitle" : "section.expandTitle", {
+        section: getSectionLabel(sectionKey)
+      });
+      button.setAttribute("aria-expanded", String(isExpanded));
+    });
+  
+    dom.togglePreviewButton.textContent = sectionState.preview ? window.i18n.t('btn.hidePreview') : window.i18n.t('btn.showPreview');
+    dom.toggleRawButton.textContent = sectionState.raw ? window.i18n.t('btn.hideRaw') : window.i18n.t('btn.showRaw');
+    dom.toggleWarningsButton.textContent = sectionState.warnings ? window.i18n.t('btn.hideWarnings') : window.i18n.t('btn.showWarnings');
   };
-
+  
+  const getSectionLabel = (sectionKey) => window.i18n.t(`tabs.${sectionKey}`);
+  
+  const setSectionExpanded = (sectionKey, expanded) => {
+    if (!(sectionKey in sectionState)) return;
+    sectionState[sectionKey] = expanded;
+    updateSectionControls();
+  };
+  
+  const toggleSection = (sectionKey) => {
+    setSectionExpanded(sectionKey, !sectionState[sectionKey]);
+  };
+  
+  const navigateToSection = (sectionKey) => {
+    if (sectionKey === "top") {
+      dom.topSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    setSectionExpanded(sectionKey, true);
+    window.requestAnimationFrame(() => {
+      sections[sectionKey]?.panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+  
   const toggleTheme = () => {
     theme = theme === "day" ? "night" : "day";
     localStorage.setItem("warogan-theme", theme);
@@ -1384,42 +1471,39 @@
     dom.themeToggleButton.textContent = theme === "day" ? window.i18n.t('btn.theme.day') : window.i18n.t('btn.theme.night');
   };
 
-  const toggleRaw = () => {
-    dom.rawPanel.classList.toggle("is-hidden");
-    dom.toggleRawButton.textContent = dom.rawPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showRaw') : window.i18n.t('btn.hideRaw');
+  const toggleSidebar = () => {
+    sidebarCollapsed = !sidebarCollapsed;
+    localStorage.setItem("warogan-sidebar", sidebarCollapsed ? "1" : "");
+    applySidebar();
   };
 
-  const toggleWarnings = () => {
-    dom.warningPanel.classList.toggle("is-hidden");
-    dom.toggleWarningsButton.textContent = dom.warningPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showWarnings') : window.i18n.t('btn.hideWarnings');
+  const applySidebar = () => {
+    dom.mainSidebar.classList.toggle("is-collapsed", sidebarCollapsed);
+    dom.sidebarToggle.title = sidebarCollapsed ? "展開側欄" : "收合側欄";
+    dom.sidebarToggle.setAttribute("aria-label", sidebarCollapsed ? "展開側欄" : "收合側欄");
   };
-
-  const togglePreview = () => {
-    dom.previewPanel.classList.toggle("is-hidden");
-    dom.togglePreviewButton.textContent = dom.previewPanel.classList.contains("is-hidden") ? window.i18n.t('btn.showPreview') : window.i18n.t('btn.hidePreview');
-  };
-
+  
   const toggleViewMode = () => {
     expandedModels = !expandedModels;
     selectedPreviewKey = "";
     render();
   };
-
+  
   const updateViewModeControl = () => {
     dom.viewModeButton.textContent = expandedModels ? window.i18n.t('btn.viewIndividual') : window.i18n.t('btn.viewGroup');
     dom.viewModeButton.title = expandedModels ? window.i18n.t('tooltip.individual') : window.i18n.t('tooltip.group');
     dom.viewModeButton.classList.toggle("is-individual", expandedModels);
     dom.viewModeButton.classList.toggle("is-group", !expandedModels);
   };
-
+  
   const copyCurrentTable = async () => {
     await copyText(buildCsv(army, getVisibleRows()), window.i18n.t('status.tableCopied'));
   };
-
+  
   const copyPreview = async () => {
     await copyText(dom.taggedPreview.textContent, window.i18n.t('status.previewCopied'));
   };
-
+  
   const copyText = async (text, message) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -1433,9 +1517,9 @@
     }
     setStatus(message);
   };
-
+  
   const getRowKey = ({ unit, group }) => group.rowKey || `${unit.id}::${group.id}::${group.modelName}::${group.count}`;
-
+  
   const download = (fileName, type, content) => {
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
@@ -1445,20 +1529,20 @@
     anchor.click();
     URL.revokeObjectURL(url);
   };
-
+  
   const setBusy = (busy) => {
     dom.parseButton.disabled = busy || !selectedFile;
     dom.fileInput.disabled = busy;
   };
-
+  
   const setStatus = (message, isError = false) => {
     dom.status.textContent = message;
     dom.status.classList.toggle("is-error", isError);
   };
-
+  
   setStatus(window.i18n.t('status.waiting'));
   applyTheme();
+  applySidebar();
   bindEvents();
   render();
-
 })();
