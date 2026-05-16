@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(\\(Get-Content \"c:\\\\Users\\\\User\\\\Desktop\\\\企劃設定\\\\40K 數值轉換\\\\assets\\\\js\\\\app.bundle.js\"\\).Count)"
-    ]
-  }
-}

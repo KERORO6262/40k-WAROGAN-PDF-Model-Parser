@@ -7,6 +7,9 @@ warogan-models.json
 warogan-models.csv
 warogan-models.html
 
+# Claude Code local config (permissions, personal settings)
+.claude/
+
 # OS/editor noise
 .DS_Store
 Thumbs.db
