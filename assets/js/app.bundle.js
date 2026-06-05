@@ -143,7 +143,7 @@
       if (END_START.test(line)) break;
       const core = line.match(CORE_PREFIX);
       if (core) {
-        splitList(core[1]).forEach((name) => abilities.push(makeAbility(name, "", "core", "unit", line)));
+        abilities.push(makeAbility("Core Abilities", core[1].trim(), "core", "unit", line));
         continue;
       }
       const invulnerable = line.match(INVULN_PREFIX);
@@ -1036,7 +1036,7 @@
     const faction = unit.faction || army?.faction;
     if (faction) lines.push(`[D8B4FE]\u3010${t("preview.label.faction")}\u3011:[-] ${faction}`);
     group.matchedAbilities.forEach((ability) => {
-      const name = ability.name === "Invulnerable Save" ? t("preview.label.invulnSave") : ability.name;
+      const name = ability.name === "Invulnerable Save" ? t("preview.label.invulnSave") : ability.name === "Core Abilities" ? t("preview.label.coreAbilities") : ability.name;
       lines.push(`[D8B4FE]${name}:[-] ${ability.description || ability.rawText || ""}`.trim());
     });
     return lines;

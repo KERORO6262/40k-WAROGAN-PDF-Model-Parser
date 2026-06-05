@@ -15,7 +15,7 @@ export const parseAbilities = (unitBlock) => {
     if (END_START.test(line)) break;
     const core = line.match(CORE_PREFIX);
     if (core) {
-      splitList(core[1]).forEach((name) => abilities.push(makeAbility(name, "", "core", "unit", line)));
+      abilities.push(makeAbility("Core Abilities", core[1].trim(), "core", "unit", line));
       continue;
     }
     const invulnerable = line.match(INVULN_PREFIX);

@@ -189,7 +189,7 @@ const formatTaggedAbilities = (army, unit, group, t) => {
   const faction = unit.faction || army?.faction;
   if (faction) lines.push(`[D8B4FE]【${t("preview.label.faction")}】:[-] ${faction}`);
   group.matchedAbilities.forEach((ability) => {
-    const name = ability.name === "Invulnerable Save" ? t("preview.label.invulnSave") : ability.name;
+    const name = ability.name === "Invulnerable Save" ? t("preview.label.invulnSave") : ability.name === "Core Abilities" ? t("preview.label.coreAbilities") : ability.name;
     lines.push(`[D8B4FE]${name}:[-] ${ability.description || ability.rawText || ""}`.trim());
   });
   return lines;

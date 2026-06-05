@@ -61,6 +61,7 @@
       'preview.label.keywords':       '關鍵詞',
       'preview.label.faction':        '陣營',
       'preview.label.invulnSave':     '無敵保護',
+      'preview.label.coreAbilities':  '【核心】',
     },
     en: {
       'brand.desc':         'Warhammer 40,000 10th Edition Model-level Roster Parser',
@@ -123,6 +124,7 @@
       'preview.label.keywords':       'Keywords',
       'preview.label.faction':        'Faction',
       'preview.label.invulnSave':     'Invulnerable Save',
+      'preview.label.coreAbilities':  'Core Abilities',
     }
   };
 
