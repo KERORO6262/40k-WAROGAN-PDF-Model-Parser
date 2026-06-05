@@ -14,6 +14,7 @@ export const parseWeapons = (unitBlock, unitId) => {
   let pendingRules = [];
   let pendingRaw = [];
   let ruleBuffer = null;
+  let attachRulesToLast = false;
 
   const flush = (statLine = "") => {
     const tailMatch = statLine.match(STAT_TAIL);
@@ -59,6 +60,7 @@ export const parseWeapons = (unitBlock, unitId) => {
       pendingRules = [];
       pendingRaw = [];
       ruleBuffer = null;
+      attachRulesToLast = false;
       continue;
     }
 
@@ -71,20 +73,33 @@ export const parseWeapons = (unitBlock, unitId) => {
 
     if (ruleBuffer !== null) {
       ruleBuffer = `${ruleBuffer} ${line}`;
-      pendingRaw.push(line);
+      if (!attachRulesToLast) pendingRaw.push(line);
       if (line.includes("]")) {
-        pendingRules.push(...collectRules(ruleBuffer));
+        const rules = collectRules(ruleBuffer);
+        if (attachRulesToLast && weapons.length > 0) {
+          weapons[weapons.length - 1].rules.push(...rules);
+        } else {
+          pendingRules.push(...rules);
+        }
         ruleBuffer = null;
+        attachRulesToLast = false;
       }
       continue;
     }
 
     if (line.startsWith("[")) {
-      pendingRaw.push(line);
+      const shouldAttachToLast = pendingName === null && weapons.length > 0;
+      if (!shouldAttachToLast) pendingRaw.push(line);
       if (line.includes("]")) {
-        pendingRules.push(...collectRules(line));
+        const rules = collectRules(line);
+        if (shouldAttachToLast) {
+          weapons[weapons.length - 1].rules.push(...rules);
+        } else {
+          pendingRules.push(...rules);
+        }
       } else {
         ruleBuffer = line;
+        attachRulesToLast = shouldAttachToLast;
       }
       continue;
     }

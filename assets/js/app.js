@@ -38,6 +38,7 @@ const dom = {
   previewPanel: document.querySelector("#previewSection"),
   previewPanelBody: document.querySelector("#previewPanelBody"),
   previewSelect: document.querySelector("#previewSelect"),
+  previewCopyInlineBtn: document.querySelector("#previewCopyInlineBtn"),
   previewModelBadge: document.querySelector("#previewModelBadge"),
   taggedPreview: document.querySelector("#taggedPreview"),
   sectionToggleButtons: document.querySelectorAll("[data-section-toggle]"),
@@ -78,6 +79,7 @@ const bindEvents = () => {
   dom.copyTableButton.addEventListener("click", copyCurrentTable);
   dom.togglePreviewButton.addEventListener("click", () => toggleSection("preview"));
   dom.copyPreviewButton.addEventListener("click", copyPreview);
+  dom.previewCopyInlineBtn.addEventListener("click", copyPreview);
   dom.toggleRawButton.addEventListener("click", () => toggleSection("raw"));
   dom.toggleWarningsButton.addEventListener("click", () => toggleSection("warnings"));
   dom.viewModeButton.addEventListener("click", toggleViewMode);
@@ -166,7 +168,8 @@ const render = () => {
     dom.toggleWarningsButton,
     dom.viewModeButton,
     dom.searchInput,
-    dom.previewSelect
+    dom.previewSelect,
+    dom.previewCopyInlineBtn
   ].forEach((element) => { element.disabled = !hasArmy; });
 
   updateSectionControls();
