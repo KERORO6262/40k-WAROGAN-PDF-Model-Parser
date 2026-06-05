@@ -350,6 +350,7 @@
     let pendingRules = [];
     let pendingRaw = [];
     let ruleBuffer = null;
+    let attachRulesToLast = false;
 
     const flush = (statLine = "") => {
       const tailMatch = statLine.match(STAT_TAIL);
@@ -395,6 +396,7 @@
         pendingRules = [];
         pendingRaw = [];
         ruleBuffer = null;
+        attachRulesToLast = false;
         continue;
       }
 
@@ -402,25 +404,39 @@
       if (ANY_SECTION.test(line) && !SECTION_START.test(line)) {
         mode = null;
         ruleBuffer = null;
+        attachRulesToLast = false;
         continue;
       }
 
       if (ruleBuffer !== null) {
         ruleBuffer = `${ruleBuffer} ${line}`;
-        pendingRaw.push(line);
+        if (!attachRulesToLast) pendingRaw.push(line);
         if (line.includes("]")) {
-          pendingRules.push(...collectRules(ruleBuffer));
+          const rules = collectRules(ruleBuffer);
+          if (attachRulesToLast && weapons.length > 0) {
+            weapons[weapons.length - 1].rules.push(...rules);
+          } else {
+            pendingRules.push(...rules);
+          }
           ruleBuffer = null;
+          attachRulesToLast = false;
         }
         continue;
       }
 
       if (line.startsWith("[")) {
-        pendingRaw.push(line);
+        const shouldAttachToLast = pendingName === null && weapons.length > 0;
+        if (!shouldAttachToLast) pendingRaw.push(line);
         if (line.includes("]")) {
-          pendingRules.push(...collectRules(line));
+          const rules = collectRules(line);
+          if (shouldAttachToLast) {
+            weapons[weapons.length - 1].rules.push(...rules);
+          } else {
+            pendingRules.push(...rules);
+          }
         } else {
           ruleBuffer = line;
+          attachRulesToLast = shouldAttachToLast;
         }
         continue;
       }
@@ -1026,20 +1042,25 @@
     return lines;
   };
 
-  const formatTaggedWeapons = (unit, group, mode) => unique(group.matchedWeapons
-    .map((match) => {
-      const weapon = unit.weapons.find((profile) => profile.id === match.weaponProfileId);
-      if (!weapon || weapon.mode !== mode) return "";
-      const count = Math.max(1, group.count > 1 ? match.quantityTotal || match.quantityPerModel || 1 : match.quantityPerModel || 1);
-      const suffix = count > 1 ? ` *${count}` : "";
-      const rules = weapon.rules.length ? `[C4B5FD][${weapon.rules.join(", ")}][-]` : "[C4B5FD][-]";
-      return [
-        `[FFFFFF]${weapon.name}${suffix}[-]`,
-        `${weapon.range} [808080]|[-] A:[FFFF00]${weapon.attacks}[-] [808080]|[-] ${weapon.skillLabel}:[FFFF00]${weapon.skill}[-] [808080]|[-] S:[00FFFF]${weapon.strength}[-] [808080]|[-] AP:[00FFFF]${weapon.ap}[-] [808080]|[-] D:[00FFFF]${weapon.damage}[-]`,
-        rules
-      ].join("\n");
-    })
-    .filter(Boolean));
+  const formatTaggedWeapons = (unit, group, mode) => {
+    const seen = new Set();
+    return group.matchedWeapons
+      .map((match) => {
+        const weapon = unit.weapons.find((profile) => profile.id === match.weaponProfileId);
+        if (!weapon || weapon.mode !== mode || seen.has(match.weaponProfileId)) return "";
+        seen.add(match.weaponProfileId);
+        const count = Math.max(1, group.count > 1 ? match.quantityTotal || match.quantityPerModel || 1 : match.quantityPerModel || 1);
+        const suffix = count > 1 ? ` *${count}` : "";
+        const rules = weapon.rules.length ? `[C4B5FD][${weapon.rules.join(", ")}][-]` : "[C4B5FD][-]";
+        return [
+          `[FFFFFF]${weapon.name}${suffix}[-]`,
+          `${weapon.range} [808080]|[-] A:[FFFF00]${weapon.attacks}[-] [808080]|[-] ${weapon.skillLabel}:[FFFF00]${weapon.skill}[-] [808080]|[-] S:[00FFFF]${weapon.strength}[-] [808080]|[-] AP:[00FFFF]${weapon.ap}[-] [808080]|[-] D:[00FFFF]${weapon.damage}[-]`,
+          rules,
+          ""
+        ].join("\n");
+      })
+      .filter(Boolean);
+  };
 
 
   // assets/js/pdfReader.js
@@ -1111,6 +1132,7 @@
     copyTableButton: document.querySelector("#copyTableButton"),
     togglePreviewButton: document.querySelector("#togglePreviewButton"),
     copyPreviewButton: document.querySelector("#copyPreviewButton"),
+    previewCopyInlineBtn: document.querySelector("#previewCopyInlineBtn"),
     toggleRawButton: document.querySelector("#toggleRawButton"),
     toggleWarningsButton: document.querySelector("#toggleWarningsButton"),
     viewModeButton: document.querySelector("#viewModeButton"),
@@ -1174,6 +1196,7 @@
     dom.copyTableButton.addEventListener("click", copyCurrentTable);
     dom.togglePreviewButton.addEventListener("click", () => toggleSection("preview"));
     dom.copyPreviewButton.addEventListener("click", copyPreview);
+    dom.previewCopyInlineBtn.addEventListener("click", copyPreview);
     dom.toggleRawButton.addEventListener("click", () => toggleSection("raw"));
     dom.toggleWarningsButton.addEventListener("click", () => toggleSection("warnings"));
     dom.viewModeButton.addEventListener("click", toggleViewMode);
@@ -1258,6 +1281,7 @@
       dom.copyTableButton,
       dom.togglePreviewButton,
       dom.copyPreviewButton,
+      dom.previewCopyInlineBtn,
       dom.toggleRawButton,
       dom.toggleWarningsButton,
       dom.viewModeButton,
