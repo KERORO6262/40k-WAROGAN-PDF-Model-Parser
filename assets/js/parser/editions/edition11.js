@@ -42,8 +42,8 @@ export const normalizeEdition11Text = (rawText = "") => {
 };
 
 const cleanEdition11Line = (line = "") => line
-  .replace(/^[^A-Za-z0-9(]+(?=\d*\s*[A-Za-z(])/g, "")
-  .replace(/^\s*["']+\s*(?=\d*\s*[A-Za-z(])/u, "")
+  .replace(/^[^A-Za-z0-9(\[]+(?=\d*\s*[A-Za-z(\[])/g, "")
+  .replace(/^\s*["']+\s*(?=\d*\s*[A-Za-z(\[])/u, "")
   .replace(/\s+/g, " ")
   .trim();
 
