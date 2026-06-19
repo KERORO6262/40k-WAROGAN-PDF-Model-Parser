@@ -156,6 +156,22 @@ Power weapon Melee 2 4+ 4 -2 1
 Abilities Description
 Keywords: Infantry, Grenades, Imperium, Retributor Squad`
   ,
+  retributorSplitDesignersNote: `Retributor Squad [125pts]
+Retributor Superior equipped with: Bolt pistol and Close combat weapon
+4 Retributors equipped with: Heavy bolter and Close combat weapon
+Unit M T SV W LD OC
+Retributor Superior 6" 3 3+ 1 7+ 2
+Retributors 6" 3 3+ 1 7+ 2
+Ranged Weapons Range A BS S AP D
+Bolt pistol 12" 1 3+ 4 0 1
+Heavy bolter 36" 3 4+ 5 -1 2
+Melee Weapons Range A WS S AP D
+Close combat weapon Melee 1 4+ 3 0 1
+Abilities Description
+Designer's Note
+Place two Cherub tokens next to the unit, removing one each time the Cherubs ability has been used.
+Keywords: Infantry, Grenades, Imperium, Retributor Squad`
+  ,
   diceProfileWeapons: `Dice Profile Test [100pts]
 ??Dice Profile Test equipped with: Variable cannon and Split profile launcher
 Unit M T SV W LD OC
@@ -315,6 +331,17 @@ export const runParserFixtureChecks = () => {
   ["Simulacrum Imperialis", "Designer's Note"].forEach((name) => {
     check(battleSistersMatchedNames.includes(name), `Expected Battle Sisters ability "${name}" to appear in model preview data.`);
   });
+  const retributorSplitDesignersNote = results.retributorSplitDesignersNote.units[0];
+  const retributorDesignersNote = retributorSplitDesignersNote.unitRules.find((ability) => ability.name === "Designer's Note");
+  check(retributorDesignersNote?.description.startsWith("Place two Cherub tokens"), "Expected split-line Designer's Note description to parse.");
+  check(
+    retributorSplitDesignersNote.modelGroups.every((group) => group.matchedAbilities.some((ability) => ability.name === "Designer's Note")),
+    "Expected split-line Designer's Note to apply to all Retributor model groups."
+  );
+  check(
+    !retributorSplitDesignersNote.parseWarnings.some((warning) => warning.code === "ABILITY_SCOPE_UNKNOWN" && warning.message.includes("Designer's Note")),
+    "Expected split-line Designer's Note not to emit an ability scope warning."
+  );
 
   runEdition11ParserFixtures();
   return "ok";

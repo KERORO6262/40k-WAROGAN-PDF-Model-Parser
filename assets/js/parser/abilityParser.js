@@ -83,6 +83,10 @@ const collectAbilityEntries = (lines) => {
   const entries = [];
   lines.some((line) => {
     if (END_START.test(line)) return true;
+    if (entries.length && isDescriptionOnlyLine(line) && isBareAbilityName(entries[entries.length - 1])) {
+      entries[entries.length - 1] = `${entries[entries.length - 1]} ${line}`;
+      return false;
+    }
     if (entries.length && isAbilityContinuation(line)) {
       entries[entries.length - 1] = `${entries[entries.length - 1]} ${line}`;
       return false;
@@ -98,6 +102,10 @@ const collectAbilityEntries = (lines) => {
 };
 
 const isAbilityContinuation = (line) => /^[a-z]/.test(line.trim());
+
+const isBareAbilityName = (line) => /^[A-Z][A-Za-z0-9' -]{2,47}$/.test(line.trim());
+
+const isDescriptionOnlyLine = (line) => new RegExp(`^${ABILITY_DESCRIPTION_START}\\b.+$`, "i").test(line.trim());
 
 const isAbilityEntryStart = (line) => {
   if (CORE_PREFIX.test(line) || INVULN_PREFIX.test(line)) return true;
@@ -126,7 +134,7 @@ const parseNamedAbility = (line) => {
 
 const inferScope = (text) => {
   if (/this unit|models in that unit|units? with this ability|your army includes one or more units?|hit roll|wound roll|attack targets|enemy unit/i.test(text)) return "unit";
-  if (/objective marker|miracle dice|token next to the unit/i.test(text)) return "unit";
+  if (/objective marker|miracle dice|tokens? next to the unit/i.test(text)) return "unit";
   if (/stratagem|-\d+ cp\b/i.test(text)) return "unit";
   if (/all models/i.test(text)) return "all_models";
   if (/bearer/i.test(text)) return "bearer";
