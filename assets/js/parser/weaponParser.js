@@ -24,6 +24,11 @@ export const parseWeapons = (unitBlock, unitId) => {
     const onlyMatch = statLine.match(STAT_ONLY);
     const match = tailMatch || (onlyMatch && pendingName ? ["", pendingName, ...onlyMatch.slice(1)] : null);
     if (!match) return false;
+    const inlineRuleMatch = match[1].match(/\[(.*?)\]/);
+    if (inlineRuleMatch) {
+      pendingRules.push(...collectRules(inlineRuleMatch[0]));
+      match[1] = match[1].replace(/\[.*?\]/g, "").trim();
+    }
     const nameFromStat = displayName(match[1]);
     const parsedName = nameFromStat || pendingName;
     if (!parsedName || !mode) return false;
@@ -90,7 +95,7 @@ export const parseWeapons = (unitBlock, unitId) => {
       continue;
     }
 
-    if (line.startsWith("[")) {
+    if (/^[^a-zA-Z0-9]*\[/.test(line)) {
       const shouldAttachToLast = pendingName === null && weapons.length > 0;
       if (!shouldAttachToLast) pendingRaw.push(line);
       if (line.includes("]")) {
@@ -121,8 +126,8 @@ export const parseWeapons = (unitBlock, unitId) => {
 };
 
 const collectRules = (line) => line
-  .replace(/^\[/, "")
-  .replace(/\]$/, "")
+  .replace(/^.*?\[/, "")
+  .replace(/\].*$/, "")
   .split(",")
   .map((rule) => displayName(rule))
   .filter(Boolean);
