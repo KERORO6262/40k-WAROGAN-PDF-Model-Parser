@@ -870,61 +870,7 @@
 
   const extractMeta = (text, pattern) => text.match(pattern)?.[1]?.trim() || null;
 
-  // assets/js/parser/editions/edition11.js
-  const EDITION_11_TITLE_FALLBACK = "Warhammer 40,000 11th Edition";
-  const EDITION_10_TITLE = "Warhammer 40,000 10th Edition";
-  const TABLE_HEADERS = [
-    "Unit M T SV W LD OC",
-    "Ranged Weapons Range A BS S AP D",
-    "Melee Weapons Range A WS S AP D",
-    "Abilities Description"
-  ];
-
-  const parse11 = (rawText, sourceFileName = "WAROGAN.pdf") => {
-    const army = parseArmy(normalizeEdition11Text(rawText), sourceFileName);
-    if (!army.title || army.title === EDITION_10_TITLE) {
-      army.title = EDITION_11_TITLE_FALLBACK;
-    }
-    return army;
-  };
-
-  const normalizeEdition11Text = (rawText = "") => {
-    let text = String(rawText)
-      .replace(/\r\n?/g, "\n")
-      .replace(/([^\n])\s+(Unit\s+M\s+T\s+SV\s+W\s+LD\s+OC\b)/gi, "$1\n$2")
-      .replace(/([^\n])\s+(Ranged\s+Weapons\s+Range\s+A\s+BS\s+S\s+AP\s+D\b)/gi, "$1\n$2")
-      .replace(/([^\n])\s+(Melee\s+Weapons\s+Range\s+A\s+WS\s+S\s+AP\s+D\b)/gi, "$1\n$2")
-      .replace(/([^\n])\s+(Abilities\s+Description\b)/gi, "$1\n$2")
-      .replace(/([^\n])\s+(Keywords:)/gi, "$1\n$2")
-      .replace(/([^\n])\s+(Faction:)/gi, "$1\n$2");
-
-    TABLE_HEADERS.forEach((header) => {
-      const compactHeader = header.replace(/\s+/g, "\\s+");
-      text = text.replace(new RegExp(`(^|\\n)\\s*${compactHeader}\\s*`, "gi"), `\n${header}\n`);
-    });
-
-    return text
-      .split("\n")
-      .map(cleanEdition11Line)
-      .filter((line, index, lines) => !isRepeatedUnitNameBeforeTitle(line, lines[index + 1]))
-      .join("\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-  };
-
-  const cleanEdition11Line = (line = "") => line
-    .replace(/^[^A-Za-z0-9(]+(?=\d*\s*[A-Za-z(])/g, "")
-    .replace(/^\s*["']+\s*(?=\d*\s*[A-Za-z(])/u, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const isRepeatedUnitNameBeforeTitle = (line = "", nextLine = "") => {
-    const title = nextLine.match(/^(.+?)\s*\[\d+\s*pts\]\s*$/i);
-    return Boolean(title && line.toLowerCase() === title[1].trim().toLowerCase());
-  };
-
-  // assets/js/parser/editions/parserRegistry.js
-  const getParser = (edition) => edition === "11" ? parse11 : parseArmy;
+  // assets/js/parser/editions/parserRegistry.js (10版唯一解析器)
 
   // assets/js/parser/exportBuilder.js
   const buildExportArmy = (army) => ({
@@ -1240,7 +1186,6 @@
     sectionToggleButtons: document.querySelectorAll("[data-section-toggle]"),
     sectionTabButtons: document.querySelectorAll("[data-target-panel]"),
     langToggleButton: document.querySelector("#langToggleButton"),
-    editionToggleButton: document.querySelector("#editionToggleButton"),
     sidebarToggle: document.querySelector("#sidebarToggle"),
     mainSidebar: document.querySelector("#mainSidebar")
   };
@@ -1253,7 +1198,6 @@
   let collapsedUnits = new Set();
   let theme = localStorage.getItem("warogan-theme") || "day";
   let sidebarCollapsed = localStorage.getItem("warogan-sidebar") === "1";
-  let edition = localStorage.getItem("warogan-edition") || "10";
   const sectionState = {
     table: true,
     preview: false,
@@ -1313,11 +1257,9 @@
     dom.langToggleButton.addEventListener("click", () => {
       window.i18n.setLang(window.i18n.lang === "zh" ? "en" : "zh");
     });
-    dom.editionToggleButton.addEventListener("click", toggleEdition);
     document.addEventListener("langchange", () => {
       applyTheme();
       updateSectionControls();
-      updateEditionControl();
       render();
     });
 
@@ -1342,7 +1284,7 @@
       setStatus(window.i18n.t('status.reading', { filename: selectedFile.name }));
       pdfText = await readPdfText(selectedFile, ({ pageNumber, pageCount }) => setStatus(window.i18n.t('status.readingPage', { pageNumber, pageCount })));
       setStatus(window.i18n.t('status.parsing'));
-      army = getParser(edition)(pdfText.fullText, selectedFile.name);
+      army = parseArmy(pdfText.fullText, selectedFile.name);
       collapsedUnits = new Set();
       selectedPreviewKey = "";
       const modelGroupCount = army.units.reduce((sum, unit) => sum + unit.modelGroups.length, 0);
@@ -1357,7 +1299,6 @@
   
   const render = () => {
     const hasArmy = Boolean(army);
-    updateEditionControl();
     [
       dom.downloadJsonButton,
       dom.downloadCsvButton,
@@ -1592,19 +1533,6 @@
     dom.sidebarToggle.setAttribute("aria-label", sidebarCollapsed ? "展開側欄" : "收合側欄");
   };
   
-  const toggleEdition = () => {
-    edition = edition === "10" ? "11" : "10";
-    localStorage.setItem("warogan-edition", edition);
-    army = null;
-    render();
-    if (selectedFile && pdfText) parseCurrentFile();
-  };
-
-  const updateEditionControl = () => {
-    dom.editionToggleButton.textContent = window.i18n.t(`btn.edition${edition}`);
-    dom.editionToggleButton.dataset.edition = edition;
-  };
-
   const toggleViewMode = () => {
     expandedModels = !expandedModels;
     selectedPreviewKey = "";
@@ -1665,7 +1593,6 @@
   setStatus(window.i18n.t('status.waiting'));
   applyTheme();
   applySidebar();
-  updateEditionControl();
   bindEvents();
   render();
 })();

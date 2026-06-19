@@ -1,5 +1,4 @@
 import { parseArmy } from "../parser/unitParser.js";
-import { parse as parseEdition11 } from "../parser/editions/edition11.js";
 
 export const parserFixtures = {
   morvennVahl: `Morvenn Vahl [170pts]
@@ -186,121 +185,8 @@ Abilities Description
 Keywords: Infantry, Imperium, Dice Profile Test`
 };
 
-export const edition11ParserFixtures = {
-  daemonifuge: `Daemonifuge (Warlord)
-Daemonifuge (Warlord) [85pts]
-??Ephrael Stern equipped with: Bolt pistol and Sanctity
-??Kyganil of the Bloody Tears equipped with: the Outcast's Weapons
-Unit M T SV W LD OC
-Ephrael Stern 8" 3 3+ 5 6+^ 1
-Kyganil of The Bloody Tears 8" 3 6+ 3 6+^ 1
-Ranged Weapons Range A BS S AP D
-Bolt pistol 12" 1 3+ 4 0 1
-[PISTOL]
-Melee Weapons Range A WS S AP D
-Sanctity Melee 4 2+ 6 -2 2
-[ANTI-CHAOS 2+, PRECISION]
-The Outcast's Weapons Melee 6 2+ 4 -2 1
-[PRECISION]
-Abilities Description
-Core Abilities Deep Strike
-Divine Intervention If this unit is destroyed, you can use the Divine Intervention Stratagem.
-any other uses of that stratagem this phase. If you do:  That use is -1 CP.  That use does not prevent any uses of that stratagem on other units this phase.
-Keywords: Infantry, Character, Epic Hero, Imperium`,
-  canoness: `Canoness
-Canoness [60pts]
-??Canoness equipped with: power weapon, plasma pistol and rod of office
-Unit M T SV W LD OC
-Canoness 6" 3 3+ 4 6+^ 1
-Ranged Weapons Range A BS S AP D
-Plasma pistol - standard 12" 1 2+ 7 -2 1
-[PISTOL]
-Plasma pistol - supercharge 12" 1 2+ 8 -3 2
-[HAZARDOUS, PISTOL]
-Melee Weapons Range A WS S AP D
-Power weapon Melee 4 2+ 4 -2 2
-Abilities Description
-Core Abilities Leader
-Invulnerable Save This unit has a 4+ invulnerable save.
-Rod of Office Each time a model in the bearer's unit makes an attack, re-roll a Hit roll of 1.
-Keywords: Infantry, Character, Imperium`,
-  dialogus: `Dialogus
-Dialogus [40pts]
-??Dialogus equipped with: Bolt pistol and Dialogus staff
-Unit M T SV W LD OC
-Dialogus 6" 3 3+ 3 5+^ 1
-Ranged Weapons Range A BS S AP D
-Bolt pistol 12" 1 3+ 4 0 1
-[PISTOL, LETHAL HITS]
-Melee Weapons Range A WS S AP D
-Dialogus staff Melee 3 4+ 4 0 1
-[LETHAL HITS]
-Abilities Description
-Core Abilities Support
-Invulnerable Save This unit has a 4+ invulnerable save.
-Laud Hailer Once per battle, at the start of any phase, select one friendly Adepta Sororitas unit.
-Keywords: Infantry, Character, Imperium`,
-  hospitaller: `Hospitaller
-Hospitaller [85pts]
-??Hospitaller equipped with: Bolt pistol and Chirurgeon's tools
-Unit M T SV W LD OC
-Hospitaller 7"^ 3 3+ 3 6+^ 2^
-Ranged Weapons Range A BS S AP D
-Bolt pistol 12" 1 3+ 4 0 1
-[PISTOL, LETHAL HITS]
-Melee Weapons Range A WS S AP D
-Chirurgeon's tools Melee 3 4+ 3 0 1
-[LETHAL HITS]
-Abilities Description
-Core Abilities Support
-Invulnerable Save This unit has a 6+ invulnerable save.
-Medicus Ministorum While this model is leading a unit, models in that unit have the Feel No Pain 5+ ability.
-Keywords: Infantry, Character, Imperium`,
-  palatine: `Palatine
-Palatine [75pts]
-??Palatine equipped with: Palatine blade and Plasma pistol
-Unit M T SV W LD OC
-Palatine 7"^ 3 3+ 4 6+^ 2^
-Ranged Weapons Range A BS S AP D
-Plasma pistol - standard 12" 1 2+ 7 -2 1
-[PISTOL]
-Plasma pistol - supercharge 12" 1 2+ 8 -3 2
-[HAZARDOUS, PISTOL]
-Melee Weapons Range A WS S AP D
-Palatine blade Melee 4 2+ 4 -2 2
-Abilities Description
-Core Abilities Leader
-Invulnerable Save This unit has a 4+ invulnerable save.
-Fury of the Righteous While this model is leading a unit, weapons equipped by models in that unit have the [LETHAL HITS] ability.
-Keywords: Infantry, Character, Imperium`,
-  celestianSacresants: `Celestian Sacresants
-Celestian Sacresants [170pts]
-??Sacresant Superior equipped with: Inferno pistol and Spear of the faithful
-??9 Celestian Sacresants equipped with: Anointed halberd and Bolt pistol
-Unit M T SV W LD OC
-Celestian Sacresants 7"^ 3 3+ 1 7+ 2^
-Ranged Weapons Range A BS S AP D
-Inferno pistol 6" 1 2+^ 8 -4 D3
-[MELTA 2, PISTOL, LETHAL HITS]
-9 Bolt pistol 12" 1 2+^ 4 0 1
-[PISTOL, LETHAL HITS]
-Melee Weapons Range A WS S AP D
-Spear of the faithful Melee 3 2+^ 5 -2 2
-[LETHAL HITS]
-9 Anointed halberd Melee 3 3+^ 4 -1 1
-[LETHAL HITS]
-Abilities Description
-Core Abilities Feel No Pain 5+
-Invulnerable Save This unit has a 5+ invulnerable save.
-Keywords: Infantry, Grenades, Imperium, Celestian Sacresants`
-};
-
 export const runParserFixtures = () => Object.fromEntries(
   Object.entries(parserFixtures).map(([name, text]) => [name, parseArmy(text, `${name}.txt`)])
-);
-
-export const runEdition11ParserFixtures = () => Object.fromEntries(
-  Object.entries(edition11ParserFixtures).map(([name, text]) => [name, parseEdition11(text, `${name}.txt`)])
 );
 
 export const runParserFixtureChecks = () => {

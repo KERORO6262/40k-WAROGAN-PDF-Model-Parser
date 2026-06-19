@@ -1,6 +1,6 @@
 import { buildCsv, buildExportArmy, buildHtmlTable, buildTaggedPreview, flattenRows, getGroupWarnings, renderStats, renderWeapons } from "./parser/exportBuilder.js";
 import { escapeHtml } from "./parser/normalize.js";
-import { getParser } from "./parser/editions/parserRegistry.js";
+import { parse as parseArmy } from "./parser/editions/parserRegistry.js";
 import { readPdfText } from "./pdfReader.js";
 
 const dom = {
@@ -44,7 +44,6 @@ const dom = {
   sectionToggleButtons: document.querySelectorAll("[data-section-toggle]"),
   sectionTabButtons: document.querySelectorAll("[data-target-panel]"),
   langToggleButton: document.querySelector("#langToggleButton"),
-  editionToggleButton: document.querySelector("#editionToggleButton"),
   sidebarToggle: document.querySelector("#sidebarToggle"),
   mainSidebar: document.querySelector("#mainSidebar")
 };
@@ -57,7 +56,6 @@ let selectedPreviewKey = "";
 let collapsedUnits = new Set();
 let theme = localStorage.getItem("warogan-theme") || "day";
 let sidebarCollapsed = localStorage.getItem("warogan-sidebar") === "1";
-let edition = localStorage.getItem("warogan-edition") || "10";
 const sectionState = {
   table: true,
   preview: false,
@@ -117,11 +115,9 @@ const bindEvents = () => {
   dom.langToggleButton.addEventListener("click", () => {
     window.i18n.setLang(window.i18n.lang === "zh" ? "en" : "zh");
   });
-  dom.editionToggleButton.addEventListener("click", toggleEdition);
   document.addEventListener("langchange", () => {
     applyTheme();
     updateSectionControls();
-    updateEditionControl();
     render();
   });
 
@@ -146,7 +142,7 @@ const parseCurrentFile = async () => {
     setStatus(window.i18n.t('status.reading', { filename: selectedFile.name }));
     pdfText = await readPdfText(selectedFile, ({ pageNumber, pageCount }) => setStatus(window.i18n.t('status.readingPage', { pageNumber, pageCount })));
     setStatus(window.i18n.t('status.parsing'));
-    army = getParser(edition)(pdfText.fullText, selectedFile.name);
+    army = parseArmy(pdfText.fullText, selectedFile.name);
     collapsedUnits = new Set();
     selectedPreviewKey = "";
     const modelGroupCount = army.units.reduce((sum, unit) => sum + unit.modelGroups.length, 0);
@@ -161,7 +157,6 @@ const parseCurrentFile = async () => {
 
 const render = () => {
   const hasArmy = Boolean(army);
-  updateEditionControl();
   [
     dom.downloadJsonButton,
     dom.downloadCsvButton,
@@ -396,19 +391,6 @@ const applySidebar = () => {
   dom.sidebarToggle.setAttribute("aria-label", sidebarCollapsed ? "展開側欄" : "收合側欄");
 };
 
-const toggleEdition = () => {
-  edition = edition === "10" ? "11" : "10";
-  localStorage.setItem("warogan-edition", edition);
-  army = null;
-  render();
-  if (selectedFile && pdfText) parseCurrentFile();
-};
-
-const updateEditionControl = () => {
-  dom.editionToggleButton.textContent = window.i18n.t(`btn.edition${edition}`);
-  dom.editionToggleButton.dataset.edition = edition;
-};
-
 const toggleViewMode = () => {
   expandedModels = !expandedModels;
   selectedPreviewKey = "";
@@ -469,6 +451,5 @@ const setStatus = (message, isError = false) => {
 setStatus(window.i18n.t('status.waiting'));
 applyTheme();
 applySidebar();
-updateEditionControl();
 bindEvents();
 render();
