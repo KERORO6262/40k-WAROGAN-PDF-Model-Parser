@@ -4,6 +4,7 @@ const ABILITY_START = /^Abilities Description$/i;
 const END_START = /^(Faction:|Keywords:)/i;
 const CORE_PREFIX = /^Core Abilities\s*(.*)$/i;
 const INVULN_PREFIX = /^Invulnerable Save\s*(.*)$/i;
+const ABILITY_DESCRIPTION_START = "(This unit|Each time|While|If|You can|The bearer|This model|At the end|Once per battle|Place)";
 
 export const parseAbilities = (unitBlock) => {
   const lines = unitBlock.split("\n").map((line) => line.trim()).filter(Boolean);
@@ -82,6 +83,10 @@ const collectAbilityEntries = (lines) => {
   const entries = [];
   lines.some((line) => {
     if (END_START.test(line)) return true;
+    if (entries.length && isAbilityContinuation(line)) {
+      entries[entries.length - 1] = `${entries[entries.length - 1]} ${line}`;
+      return false;
+    }
     if (isAbilityEntryStart(line) || !entries.length) {
       entries.push(line);
       return false;
@@ -92,10 +97,12 @@ const collectAbilityEntries = (lines) => {
   return entries;
 };
 
+const isAbilityContinuation = (line) => /^[a-z]/.test(line.trim());
+
 const isAbilityEntryStart = (line) => {
   if (CORE_PREFIX.test(line) || INVULN_PREFIX.test(line)) return true;
   if (line.match(/^([A-Z][A-Za-z0-9' -]{2,}?)(?:\s{2,}|\.\s+|\s+-\s+).+$/)) return true;
-  const firstSentence = line.match(/^(.{3,48}?)\s+(This unit|Each time|While|If|You can|The bearer|This model)\b.+$/i);
+  const firstSentence = line.match(new RegExp(`^([A-Z][^,:;\\n]{2,47}?)\\s+${ABILITY_DESCRIPTION_START}\\b.+$`, "i"));
   return Boolean(firstSentence && !/[,:;]/.test(firstSentence[1]));
 };
 
@@ -109,13 +116,18 @@ const parseNamedAbility = (line) => {
   if (match) {
     return makeAbility(match[1], match[2], inferSource(match[1], match[2]), inferScope(match[2]), line);
   }
-  const firstSentence = line.match(/^(.{3,48}?)\s+(This unit|Each time|While|If|You can|The bearer|This model)\b(.+)$/i);
-  if (!firstSentence) return makeAbility(line, "", "unknown", "unknown", line);
+  const firstSentence = line.match(new RegExp(`^([A-Z][^,:;]{2,47}?)\\s+${ABILITY_DESCRIPTION_START}\\b(.+)$`, "i"));
+  if (!firstSentence) {
+    if (/^[a-z]/.test(trimmed)) return makeAbility("Unit Ability", trimmed, "unit", "unit", trimmed);
+    return makeAbility(line, "", "unknown", "unknown", line);
+  }
   return makeAbility(firstSentence[1], `${firstSentence[2]}${firstSentence[3]}`, inferSource(firstSentence[1], line), inferScope(line), line);
 };
 
 const inferScope = (text) => {
   if (/this unit|models in that unit|units? with this ability|your army includes one or more units?|hit roll|wound roll|attack targets|enemy unit/i.test(text)) return "unit";
+  if (/objective marker|miracle dice|token next to the unit/i.test(text)) return "unit";
+  if (/stratagem|-\d+ cp\b/i.test(text)) return "unit";
   if (/all models/i.test(text)) return "all_models";
   if (/bearer/i.test(text)) return "bearer";
   if (/this model/i.test(text)) return "specific_model";

@@ -2,8 +2,11 @@ import { baseWeaponName, createId, displayName } from "./normalize.js";
 
 const SECTION_START = /^(Ranged Weapons|Melee Weapons)\s+Range\s+A\s+(BS|WS)\s+S\s+AP\s+D$/i;
 const ANY_SECTION = /^(Ranged Weapons|Melee Weapons|Abilities Description|Faction:|Keywords:|Unit\s+M\s+T\s+SV\s+W\s+LD\s+OC)/i;
-const STAT_TAIL = /^(.*?)\s+(Melee|\d+["']|-)\s+(\d+D?\d*|D\d+|\d+|-)\s+(\d\+|-|N\/A)\s+([+\-\w]+)\s+(-?\d+|-)\s+([+\-\w]+)$/i;
-const STAT_ONLY = /^(Melee|\d+["']|-)\s+(\d+D?\d*|D\d+|\d+|-)\s+(\d\+|-|N\/A)\s+([+\-\w]+)\s+(-?\d+|-)\s+([+\-\w]+)$/i;
+const RANGE_TOKEN = String.raw`(?:Melee|\d+["']|-)`;
+const SKILL_TOKEN = String.raw`(?:\d+\+\^?|-|N\/A)`;
+const PROFILE_TOKEN = String.raw`(?:\d*D\d+(?:[+-]\d+)?|-?\d+(?:[+-]\d+)?|N\/A|-)`;
+const STAT_TAIL = new RegExp(`^(.*?)\\s+(${RANGE_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${SKILL_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${PROFILE_TOKEN})$`, "i");
+const STAT_ONLY = new RegExp(`^(${RANGE_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${SKILL_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${PROFILE_TOKEN})$`, "i");
 
 export const parseWeapons = (unitBlock, unitId) => {
   const lines = unitBlock.split("\n").map((line) => line.trim()).filter(Boolean);

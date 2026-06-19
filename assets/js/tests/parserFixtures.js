@@ -1,4 +1,5 @@
 import { parseArmy } from "../parser/unitParser.js";
+import { parse as parseEdition11 } from "../parser/editions/edition11.js";
 
 export const parserFixtures = {
   morvennVahl: `Morvenn Vahl [170pts]
@@ -75,6 +76,38 @@ Abilities Description
 Sacred Banner You can re-roll Advance and Charge rolls made for the bearer's unit.
 Simulacrum Imperialis The bearer has an improved Objective Control ability.
 Keywords: Infantry, Grenades, Imperium, Sisters Novitiate Squad`,
+  battleSistersSquad: `Battle Sisters Squad [100pts]
+Sister Superior equipped with: Bolt pistol, Close combat weapon, Inferno pistol and Power weapon
+6 Battle Sisters equipped with: Bolt pistol, Boltgun and Close combat weapon
+Battle Sisters equipped with: Bolt pistol, Close combat weapon and Meltagun
+Battle Sisters equipped with: Bolt pistol, Close combat weapon and Multi-melta
+Battle Sisters equipped with: Bolt pistol, Close combat weapon and Simulacrum imperialis and
+boltgun
+Unit M T SV W LD OC
+Battle Sisters Squad 6" 3 3+ 1 7+ 2
+Ranged Weapons Range A BS S AP D
+10 Bolt pistol 12" 1 3+ 4 0 1
+[PISTOL]
+Meltagun 12" 1 3+ 9 -4 D6
+[MELTA 2]
+Melee Weapons Range A WS S AP D
+10 Close combat weapon Melee 1 4+ 3 0 1
+Abilities Description
+Invulnerable Save This unit has a 6+ invulnerable save.
+Simulacrum Imperialis At the end of your Command phase, for each objective marker you control
+that has one or more units from your army with this ability within range of it,
+roll one D6: on a 4+, you gain 1 Miracle dice showing a value equal to that
+result.
+Cherub Once per battle, after this unit has performed an Act of Faith, you gain 1
+Miracle dice.
+Designer's Note Place a Cherub token next to the unit, removing it once the Cherub ability has
+been used.
+Defenders of the Faith At the end of your Command phase, if this unit is within range of an objective
+marker you control, that objective marker remains under your control, even if
+you have no models within range of it, until your opponent controls it at the
+start or end of any turn.
+Faction: Adepta Sororitas
+Keywords: Infantry, Grenades, Battleline, Imperium, Battle Sisters Squad`,
   vindicare: `Vindicare Assassin [80pts]
 • Vindicare Assassin equipped with: Exitus pistol, Exitus rifle and Vindicare combat knife
 Unit M T SV W LD OC
@@ -122,12 +155,173 @@ Close combat weapon Melee 1 4+ 3 0 1
 Power weapon Melee 2 4+ 4 -2 1
 Abilities Description
 Keywords: Infantry, Grenades, Imperium, Retributor Squad`
+  ,
+  diceProfileWeapons: `Dice Profile Test [100pts]
+??Dice Profile Test equipped with: Variable cannon and Split profile launcher
+Unit M T SV W LD OC
+Dice Profile Test 6" 4 3+ 5 7+ 2
+Ranged Weapons Range A BS S AP D
+Variable cannon 48" D6+3 3+ 10 -1 3
+[BLAST, IGNORES COVER]
+Split profile launcher
+[ONE SHOT]
+36" 2D6 4+ 6 -2 D3+3
+Abilities Description
+Keywords: Infantry, Imperium, Dice Profile Test`
+};
+
+export const edition11ParserFixtures = {
+  daemonifuge: `Daemonifuge (Warlord)
+Daemonifuge (Warlord) [85pts]
+??Ephrael Stern equipped with: Bolt pistol and Sanctity
+??Kyganil of the Bloody Tears equipped with: the Outcast's Weapons
+Unit M T SV W LD OC
+Ephrael Stern 8" 3 3+ 5 6+^ 1
+Kyganil of The Bloody Tears 8" 3 6+ 3 6+^ 1
+Ranged Weapons Range A BS S AP D
+Bolt pistol 12" 1 3+ 4 0 1
+[PISTOL]
+Melee Weapons Range A WS S AP D
+Sanctity Melee 4 2+ 6 -2 2
+[ANTI-CHAOS 2+, PRECISION]
+The Outcast's Weapons Melee 6 2+ 4 -2 1
+[PRECISION]
+Abilities Description
+Core Abilities Deep Strike
+Divine Intervention If this unit is destroyed, you can use the Divine Intervention Stratagem.
+any other uses of that stratagem this phase. If you do:  That use is -1 CP.  That use does not prevent any uses of that stratagem on other units this phase.
+Keywords: Infantry, Character, Epic Hero, Imperium`,
+  canoness: `Canoness
+Canoness [60pts]
+??Canoness equipped with: power weapon, plasma pistol and rod of office
+Unit M T SV W LD OC
+Canoness 6" 3 3+ 4 6+^ 1
+Ranged Weapons Range A BS S AP D
+Plasma pistol - standard 12" 1 2+ 7 -2 1
+[PISTOL]
+Plasma pistol - supercharge 12" 1 2+ 8 -3 2
+[HAZARDOUS, PISTOL]
+Melee Weapons Range A WS S AP D
+Power weapon Melee 4 2+ 4 -2 2
+Abilities Description
+Core Abilities Leader
+Invulnerable Save This unit has a 4+ invulnerable save.
+Rod of Office Each time a model in the bearer's unit makes an attack, re-roll a Hit roll of 1.
+Keywords: Infantry, Character, Imperium`,
+  dialogus: `Dialogus
+Dialogus [40pts]
+??Dialogus equipped with: Bolt pistol and Dialogus staff
+Unit M T SV W LD OC
+Dialogus 6" 3 3+ 3 5+^ 1
+Ranged Weapons Range A BS S AP D
+Bolt pistol 12" 1 3+ 4 0 1
+[PISTOL, LETHAL HITS]
+Melee Weapons Range A WS S AP D
+Dialogus staff Melee 3 4+ 4 0 1
+[LETHAL HITS]
+Abilities Description
+Core Abilities Support
+Invulnerable Save This unit has a 4+ invulnerable save.
+Laud Hailer Once per battle, at the start of any phase, select one friendly Adepta Sororitas unit.
+Keywords: Infantry, Character, Imperium`,
+  hospitaller: `Hospitaller
+Hospitaller [85pts]
+??Hospitaller equipped with: Bolt pistol and Chirurgeon's tools
+Unit M T SV W LD OC
+Hospitaller 7"^ 3 3+ 3 6+^ 2^
+Ranged Weapons Range A BS S AP D
+Bolt pistol 12" 1 3+ 4 0 1
+[PISTOL, LETHAL HITS]
+Melee Weapons Range A WS S AP D
+Chirurgeon's tools Melee 3 4+ 3 0 1
+[LETHAL HITS]
+Abilities Description
+Core Abilities Support
+Invulnerable Save This unit has a 6+ invulnerable save.
+Medicus Ministorum While this model is leading a unit, models in that unit have the Feel No Pain 5+ ability.
+Keywords: Infantry, Character, Imperium`,
+  palatine: `Palatine
+Palatine [75pts]
+??Palatine equipped with: Palatine blade and Plasma pistol
+Unit M T SV W LD OC
+Palatine 7"^ 3 3+ 4 6+^ 2^
+Ranged Weapons Range A BS S AP D
+Plasma pistol - standard 12" 1 2+ 7 -2 1
+[PISTOL]
+Plasma pistol - supercharge 12" 1 2+ 8 -3 2
+[HAZARDOUS, PISTOL]
+Melee Weapons Range A WS S AP D
+Palatine blade Melee 4 2+ 4 -2 2
+Abilities Description
+Core Abilities Leader
+Invulnerable Save This unit has a 4+ invulnerable save.
+Fury of the Righteous While this model is leading a unit, weapons equipped by models in that unit have the [LETHAL HITS] ability.
+Keywords: Infantry, Character, Imperium`,
+  celestianSacresants: `Celestian Sacresants
+Celestian Sacresants [170pts]
+??Sacresant Superior equipped with: Inferno pistol and Spear of the faithful
+??9 Celestian Sacresants equipped with: Anointed halberd and Bolt pistol
+Unit M T SV W LD OC
+Celestian Sacresants 7"^ 3 3+ 1 7+ 2^
+Ranged Weapons Range A BS S AP D
+Inferno pistol 6" 1 2+^ 8 -4 D3
+[MELTA 2, PISTOL, LETHAL HITS]
+9 Bolt pistol 12" 1 2+^ 4 0 1
+[PISTOL, LETHAL HITS]
+Melee Weapons Range A WS S AP D
+Spear of the faithful Melee 3 2+^ 5 -2 2
+[LETHAL HITS]
+9 Anointed halberd Melee 3 3+^ 4 -1 1
+[LETHAL HITS]
+Abilities Description
+Core Abilities Feel No Pain 5+
+Invulnerable Save This unit has a 5+ invulnerable save.
+Keywords: Infantry, Grenades, Imperium, Celestian Sacresants`
 };
 
 export const runParserFixtures = () => Object.fromEntries(
   Object.entries(parserFixtures).map(([name, text]) => [name, parseArmy(text, `${name}.txt`)])
 );
 
+export const runEdition11ParserFixtures = () => Object.fromEntries(
+  Object.entries(edition11ParserFixtures).map(([name, text]) => [name, parseEdition11(text, `${name}.txt`)])
+);
+
+export const runParserFixtureChecks = () => {
+  const results = runParserFixtures();
+  const weapons = results.diceProfileWeapons.units[0].weapons;
+  const variableCannon = weapons.find((weapon) => weapon.name === "Variable cannon");
+  const splitLauncher = weapons.find((weapon) => weapon.name === "Split profile launcher");
+  const check = (condition, message) => {
+    if (!condition) throw new Error(message);
+  };
+
+  check(variableCannon?.attacks === "D6+3", "Expected same-line D6+3 attacks to parse.");
+  check(variableCannon.rules.includes("BLAST") && variableCannon.rules.includes("IGNORES COVER"), "Expected same-line weapon rules to parse.");
+  check(splitLauncher?.attacks === "2D6", "Expected split-line 2D6 attacks to parse.");
+  check(splitLauncher?.damage === "D3+3", "Expected split-line D3+3 damage to parse.");
+  check(splitLauncher.rules.includes("ONE SHOT"), "Expected split-line weapon rules to parse.");
+
+  const battleSistersAbilities = results.battleSistersSquad.units[0].unitRules;
+  const battleSistersAbilityNames = battleSistersAbilities.map((ability) => ability.name);
+  ["Invulnerable Save", "Simulacrum Imperialis", "Cherub", "Designer's Note", "Defenders of the Faith"].forEach((name) => {
+    check(battleSistersAbilityNames.includes(name), `Expected Battle Sisters ability "${name}" to parse separately.`);
+  });
+  check(
+    battleSistersAbilities.find((ability) => ability.name === "Invulnerable Save")?.description === "This unit has a 6+ invulnerable save.",
+    "Expected Invulnerable Save description not to consume later Battle Sisters abilities."
+  );
+  const battleSistersMatchedNames = results.battleSistersSquad.units[0].modelGroups[0].matchedAbilities.map((ability) => ability.name);
+  ["Simulacrum Imperialis", "Designer's Note"].forEach((name) => {
+    check(battleSistersMatchedNames.includes(name), `Expected Battle Sisters ability "${name}" to appear in model preview data.`);
+  });
+
+  runEdition11ParserFixtures();
+  return "ok";
+};
+
 if (typeof window !== "undefined") {
   window.runWaroganParserFixtures = runParserFixtures;
+  window.runWaroganEdition11ParserFixtures = runEdition11ParserFixtures;
+  window.runWaroganParserFixtureChecks = runParserFixtureChecks;
 }

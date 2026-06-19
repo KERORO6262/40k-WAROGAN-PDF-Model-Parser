@@ -132,6 +132,7 @@
   const END_START = /^(Faction:|Keywords:)/i;
   const CORE_PREFIX = /^Core Abilities\s*(.*)$/i;
   const INVULN_PREFIX = /^Invulnerable Save\s*(.*)$/i;
+  const ABILITY_DESCRIPTION_START = "(This unit|Each time|While|If|You can|The bearer|This model|At the end|Once per battle|Place)";
 
   const parseAbilities = (unitBlock) => {
     const lines = unitBlock.split("\n").map((line) => line.trim()).filter(Boolean);
@@ -210,6 +211,10 @@
     const entries = [];
     lines.some((line) => {
       if (END_START.test(line)) return true;
+      if (entries.length && isAbilityContinuation(line)) {
+        entries[entries.length - 1] = `${entries[entries.length - 1]} ${line}`;
+        return false;
+      }
       if (isAbilityEntryStart(line) || !entries.length) {
         entries.push(line);
         return false;
@@ -220,10 +225,12 @@
     return entries;
   };
 
+  const isAbilityContinuation = (line) => /^[a-z]/.test(line.trim());
+
   const isAbilityEntryStart = (line) => {
     if (CORE_PREFIX.test(line) || INVULN_PREFIX.test(line)) return true;
     if (line.match(/^([A-Z][A-Za-z0-9' -]{2,}?)(?:\s{2,}|\.\s+|\s+-\s+).+$/)) return true;
-    const firstSentence = line.match(/^(.{3,48}?)\s+(This unit|Each time|While|If|You can|The bearer|This model)\b.+$/i);
+    const firstSentence = line.match(new RegExp(`^([A-Z][^,:;\\n]{2,47}?)\\s+${ABILITY_DESCRIPTION_START}\\b.+$`, "i"));
     return Boolean(firstSentence && !/[,:;]/.test(firstSentence[1]));
   };
 
@@ -237,13 +244,18 @@
     if (match) {
       return makeAbility(match[1], match[2], inferSource(match[1], match[2]), inferScope(match[2]), line);
     }
-    const firstSentence = line.match(/^(.{3,48}?)\s+(This unit|Each time|While|If|You can|The bearer|This model)\b(.+)$/i);
-    if (!firstSentence) return makeAbility(line, "", "unknown", "unknown", line);
+    const firstSentence = line.match(new RegExp(`^([A-Z][^,:;]{2,47}?)\\s+${ABILITY_DESCRIPTION_START}\\b(.+)$`, "i"));
+    if (!firstSentence) {
+      if (/^[a-z]/.test(trimmed)) return makeAbility("Unit Ability", trimmed, "unit", "unit", trimmed);
+      return makeAbility(line, "", "unknown", "unknown", line);
+    }
     return makeAbility(firstSentence[1], `${firstSentence[2]}${firstSentence[3]}`, inferSource(firstSentence[1], line), inferScope(line), line);
   };
 
   const inferScope = (text) => {
     if (/this unit|models in that unit|units? with this ability|your army includes one or more units?|hit roll|wound roll|attack targets|enemy unit/i.test(text)) return "unit";
+    if (/objective marker|miracle dice|token next to the unit/i.test(text)) return "unit";
+    if (/stratagem|-\d+ cp\b/i.test(text)) return "unit";
     if (/all models/i.test(text)) return "all_models";
     if (/bearer/i.test(text)) return "bearer";
     if (/this model/i.test(text)) return "specific_model";
@@ -338,8 +350,11 @@
   // assets/js/parser/weaponParser.js
   const SECTION_START = /^(Ranged Weapons|Melee Weapons)\s+Range\s+A\s+(BS|WS)\s+S\s+AP\s+D$/i;
   const ANY_SECTION = /^(Ranged Weapons|Melee Weapons|Abilities Description|Faction:|Keywords:|Unit\s+M\s+T\s+SV\s+W\s+LD\s+OC)/i;
-  const STAT_TAIL = /^(.*?)\s+(Melee|\d+["']|-)\s+(\d+D?\d*|D\d+|\d+|-)\s+(\d\+|-|N\/A)\s+([+\-\w]+)\s+(-?\d+|-)\s+([+\-\w]+)$/i;
-  const STAT_ONLY = /^(Melee|\d+["']|-)\s+(\d+D?\d*|D\d+|\d+|-)\s+(\d\+|-|N\/A)\s+([+\-\w]+)\s+(-?\d+|-)\s+([+\-\w]+)$/i;
+  const RANGE_TOKEN = String.raw`(?:Melee|\d+["']|-)`;
+  const SKILL_TOKEN = String.raw`(?:\d+\+\^?|-|N\/A)`;
+  const PROFILE_TOKEN = String.raw`(?:\d*D\d+(?:[+-]\d+)?|-?\d+(?:[+-]\d+)?|N\/A|-)`;
+  const STAT_TAIL = new RegExp(`^(.*?)\\s+(${RANGE_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${SKILL_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${PROFILE_TOKEN})$`, "i");
+  const STAT_ONLY = new RegExp(`^(${RANGE_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${SKILL_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${PROFILE_TOKEN})\\s+(${PROFILE_TOKEN})$`, "i");
 
   const parseWeapons = (unitBlock, unitId) => {
     const lines = unitBlock.split("\n").map((line) => line.trim()).filter(Boolean);
@@ -463,13 +478,14 @@
 
 
   // assets/js/parser/modelParser.js
-  const STAT_LINE = /^(.+?)\s+(\d+["']|-) ?\s+(\d+|-)\s+(\d\+|-)\s+(\d+|-)\s+(\d\+|-)\s+(\d+|-)\s*$/i;
+  const STAT_LINE = /^(.+?)\s+(\d+["']\^?|-) ?\s+(\d+|-)\s+(\d\+\^?|-)\s+(\d+|-)\s+(\d\+\^?|-)\s+(\d+\^?|-)\s*$/i;
 
   const parseModelLoadouts = (unitBlock, unitId) => {
     const beforeStats = unitBlock.split(/\nUnit\s+M\s+T\s+SV\s+W\s+LD\s+OC\b/i)[0] || unitBlock;
     const lines = normalizeLoadoutLines(beforeStats);
 
     return lines
+      .map((line) => line.replace(/^[??-]\s*/, "").trim())
       .filter((line) => /\bequipped with:\s*/i.test(line))
       .map((line, index) => {
         const [left, equipmentRaw = ""] = line.split(/\bequipped with:\s*/i);
@@ -506,7 +522,7 @@
 
   const normalizeLoadoutLines = (text) => {
     const lines = text.split("\n")
-      .map((line) => line.trim().replace(/^[??•*-]\s*/, "").trim())
+      .map((line) => line.trim().replace(/^[????-]\s*/, "").trim())
       .filter(Boolean);
     const normalizedLines = [];
     let pendingModelName = "";
@@ -846,6 +862,61 @@
 
   const extractMeta = (text, pattern) => text.match(pattern)?.[1]?.trim() || null;
 
+  // assets/js/parser/editions/edition11.js
+  const EDITION_11_TITLE_FALLBACK = "Warhammer 40,000 11th Edition";
+  const EDITION_10_TITLE = "Warhammer 40,000 10th Edition";
+  const TABLE_HEADERS = [
+    "Unit M T SV W LD OC",
+    "Ranged Weapons Range A BS S AP D",
+    "Melee Weapons Range A WS S AP D",
+    "Abilities Description"
+  ];
+
+  const parse11 = (rawText, sourceFileName = "WAROGAN.pdf") => {
+    const army = parseArmy(normalizeEdition11Text(rawText), sourceFileName);
+    if (!army.title || army.title === EDITION_10_TITLE) {
+      army.title = EDITION_11_TITLE_FALLBACK;
+    }
+    return army;
+  };
+
+  const normalizeEdition11Text = (rawText = "") => {
+    let text = String(rawText)
+      .replace(/\r\n?/g, "\n")
+      .replace(/([^\n])\s+(Unit\s+M\s+T\s+SV\s+W\s+LD\s+OC\b)/gi, "$1\n$2")
+      .replace(/([^\n])\s+(Ranged\s+Weapons\s+Range\s+A\s+BS\s+S\s+AP\s+D\b)/gi, "$1\n$2")
+      .replace(/([^\n])\s+(Melee\s+Weapons\s+Range\s+A\s+WS\s+S\s+AP\s+D\b)/gi, "$1\n$2")
+      .replace(/([^\n])\s+(Abilities\s+Description\b)/gi, "$1\n$2")
+      .replace(/([^\n])\s+(Keywords:)/gi, "$1\n$2")
+      .replace(/([^\n])\s+(Faction:)/gi, "$1\n$2");
+
+    TABLE_HEADERS.forEach((header) => {
+      const compactHeader = header.replace(/\s+/g, "\\s+");
+      text = text.replace(new RegExp(`(^|\\n)\\s*${compactHeader}\\s*`, "gi"), `\n${header}\n`);
+    });
+
+    return text
+      .split("\n")
+      .map(cleanEdition11Line)
+      .filter((line, index, lines) => !isRepeatedUnitNameBeforeTitle(line, lines[index + 1]))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
+  const cleanEdition11Line = (line = "") => line
+    .replace(/^[^A-Za-z0-9(]+(?=\d*\s*[A-Za-z(])/g, "")
+    .replace(/^\s*["']+\s*(?=\d*\s*[A-Za-z(])/u, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const isRepeatedUnitNameBeforeTitle = (line = "", nextLine = "") => {
+    const title = nextLine.match(/^(.+?)\s*\[\d+\s*pts\]\s*$/i);
+    return Boolean(title && line.toLowerCase() === title[1].trim().toLowerCase());
+  };
+
+  // assets/js/parser/editions/parserRegistry.js
+  const getParser = (edition) => edition === "11" ? parse11 : parseArmy;
 
   // assets/js/parser/exportBuilder.js
   const buildExportArmy = (army) => ({
@@ -1161,6 +1232,7 @@
     sectionToggleButtons: document.querySelectorAll("[data-section-toggle]"),
     sectionTabButtons: document.querySelectorAll("[data-target-panel]"),
     langToggleButton: document.querySelector("#langToggleButton"),
+    editionToggleButton: document.querySelector("#editionToggleButton"),
     sidebarToggle: document.querySelector("#sidebarToggle"),
     mainSidebar: document.querySelector("#mainSidebar")
   };
@@ -1173,6 +1245,7 @@
   let collapsedUnits = new Set();
   let theme = localStorage.getItem("warogan-theme") || "day";
   let sidebarCollapsed = localStorage.getItem("warogan-sidebar") === "1";
+  let edition = localStorage.getItem("warogan-edition") || "10";
   const sectionState = {
     table: true,
     preview: false,
@@ -1232,9 +1305,11 @@
     dom.langToggleButton.addEventListener("click", () => {
       window.i18n.setLang(window.i18n.lang === "zh" ? "en" : "zh");
     });
+    dom.editionToggleButton.addEventListener("click", toggleEdition);
     document.addEventListener("langchange", () => {
       applyTheme();
       updateSectionControls();
+      updateEditionControl();
       render();
     });
 
@@ -1259,7 +1334,7 @@
       setStatus(window.i18n.t('status.reading', { filename: selectedFile.name }));
       pdfText = await readPdfText(selectedFile, ({ pageNumber, pageCount }) => setStatus(window.i18n.t('status.readingPage', { pageNumber, pageCount })));
       setStatus(window.i18n.t('status.parsing'));
-      army = parseArmy(pdfText.fullText, selectedFile.name);
+      army = getParser(edition)(pdfText.fullText, selectedFile.name);
       collapsedUnits = new Set();
       selectedPreviewKey = "";
       const modelGroupCount = army.units.reduce((sum, unit) => sum + unit.modelGroups.length, 0);
@@ -1274,6 +1349,7 @@
   
   const render = () => {
     const hasArmy = Boolean(army);
+    updateEditionControl();
     [
       dom.downloadJsonButton,
       dom.downloadCsvButton,
@@ -1508,6 +1584,19 @@
     dom.sidebarToggle.setAttribute("aria-label", sidebarCollapsed ? "展開側欄" : "收合側欄");
   };
   
+  const toggleEdition = () => {
+    edition = edition === "10" ? "11" : "10";
+    localStorage.setItem("warogan-edition", edition);
+    army = null;
+    render();
+    if (selectedFile && pdfText) parseCurrentFile();
+  };
+
+  const updateEditionControl = () => {
+    dom.editionToggleButton.textContent = window.i18n.t(`btn.edition${edition}`);
+    dom.editionToggleButton.dataset.edition = edition;
+  };
+
   const toggleViewMode = () => {
     expandedModels = !expandedModels;
     selectedPreviewKey = "";
@@ -1568,6 +1657,7 @@
   setStatus(window.i18n.t('status.waiting'));
   applyTheme();
   applySidebar();
+  updateEditionControl();
   bindEvents();
   render();
 })();

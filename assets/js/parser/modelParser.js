@@ -1,6 +1,6 @@
 import { createId, createWarning, displayName, includesName, matchConfidence, normalizeName, parseQuantityName, splitList, WARNING_CODES } from "./normalize.js";
 
-const STAT_LINE = /^(.+?)\s+(\d+["']|-) ?\s+(\d+|-)\s+(\d\+|-)\s+(\d+|-)\s+(\d\+|-)\s+(\d+|-)\s*$/i;
+const STAT_LINE = /^(.+?)\s+(\d+["']\^?|-) ?\s+(\d+|-)\s+(\d\+\^?|-)\s+(\d+|-)\s+(\d\+\^?|-)\s+(\d+\^?|-)\s*$/i;
 
 export const parseModelLoadouts = (unitBlock, unitId) => {
   const beforeStats = unitBlock.split(/\nUnit\s+M\s+T\s+SV\s+W\s+LD\s+OC\b/i)[0] || unitBlock;
